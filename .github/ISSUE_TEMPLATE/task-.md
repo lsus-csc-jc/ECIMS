@@ -1,6 +1,6 @@
 ---
 name: 'Task '
-about: Describe this issue template's purpose here.
+about: Record any non-coding task you are working on
 title: ''
 labels: documentation
 assignees: katehowell316
