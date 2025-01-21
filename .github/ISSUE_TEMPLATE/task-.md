@@ -10,13 +10,7 @@ assignees: katehowell316
 *Task Description*
 Provide a brief summary of the task:
 
-*Details*
-Add detailed information about the task. This can include objectives, scope, or key points to consider:
-
 ---
-
-*Deliverables*
-List any specific deliverables for the task:
 
 *Criteria for Completion*
 Define what success looks like for this task:
