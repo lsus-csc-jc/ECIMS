@@ -3,7 +3,7 @@ name: 'Task '
 about: Record any non-coding task you are working on
 title: ''
 labels: documentation
-assignees: katehowell316
+assignees: ''
 
 ---
 
