@@ -3,7 +3,7 @@ name: Request
 about: Suggest an idea for this project
 title: ''
 labels: enhancement
-assignees: katehowell316
+assignees: ''
 
 ---
 
