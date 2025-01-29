@@ -1,0 +1,20 @@
+from django.urls import path, include
+from rest_framework.authtoken.views import obtain_auth_token
+from rest_framework.routers import DefaultRouter
+from .views import ItemViewSet, SupplierViewSet, CategoryViewSet, OrderViewSet, OrderItemViewSet, CustomerViewSet
+
+router = DefaultRouter()
+router.register(r'items', ItemViewSet)
+router.register(r'suppliers', SupplierViewSet)
+router.register(r'categories', CategoryViewSet)
+router.register(r'orders', OrderViewSet)
+router.register(r'order_items', OrderItemViewSet)
+router.register(r'customers', CustomerViewSet)
+
+urlpatterns = [
+    path('api/', include(router.urls)),
+]
+
+urlpatterns = [
+    path('api/token/', obtain_auth_token, name='api_token_auth'),
+]

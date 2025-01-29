@@ -28,7 +28,7 @@ class Item(models.Model):
     class Meta:
         ordering = ['name']
 
-#Track where inventory is sourced from
+#Track where inventory is sourced from 
 class Supplier(models.Model):
     name = models.CharField(max_length=100)
     contact_person = models.CharField(max_length=100, blank=True, null=True)
