@@ -10,6 +10,8 @@ assignees: ''
 *Task Description*
 Provide a brief summary of the task:
 
+**Attach an image related to/showing the task you are completing**
+
 ---
 
 *Criteria for Completion*
