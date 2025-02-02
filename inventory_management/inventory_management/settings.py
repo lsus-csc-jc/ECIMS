@@ -39,8 +39,15 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'inventory',
     'rest_framework',
-    'rest_framework.authtoken',
+    'rest_framework.authtoken', #token based authentication
 ]
+
+INSTALLED_APPS += ['corsheaders`']
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000", # allow frontend to connect
+]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -51,6 +58,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+MIDDLEWARE.insert(1, 'corsheaders.middleware.CorsMiddleware')
 
 ROOT_URLCONF = 'inventory_management.urls'
 
