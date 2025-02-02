@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken', #token based authentication
 ]
 
-INSTALLED_APPS += ['corsheaders`']
+INSTALLED_APPS += ['corsheaders']
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000", # allow frontend to connect
