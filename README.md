@@ -75,7 +75,7 @@ The goal of ECIMS is to deliver a scalable and adaptable inventory management sy
 - **API Development**  
   - Johnathan Cockrell
   - Kate Howell
-  - Joana Villanova
+  - Odai Alkhatib
 
 - **Testing and Quality Assurance**  
   - TBD
