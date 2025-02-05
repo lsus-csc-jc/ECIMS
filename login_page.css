@@ -1,0 +1,138 @@
+/* General styles */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: white; /* Light background for contrast */
+    margin: 0;
+    padding: 0;
+}
+
+.left-section {
+    background-color: white;
+    color: #003366;
+    padding: 30px;
+    text-align: center;
+}
+
+.ecims-title {
+    font-family: 'Aldrich', sans-serif;
+    font-size: 8rem;
+}
+
+.subtitle {
+    font-size: 1rem;
+    font-weight: 400;
+    text-align: center;
+    margin-top: 10px;
+    max-width: 80%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.right-section {
+    background-color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Form fields */
+.form-control {
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 768px) {
+    .ecims-title {
+        font-size: 4rem;
+    }
+
+    .left-section {
+        padding: 20px;
+    }
+
+    .login-container {
+        padding: 20px;
+        max-width: 75%;
+    }
+
+    .form-outline input {
+        padding: 10px;
+        font-size: 1rem;
+    }
+
+    .form-check-label {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .ecims-title {
+        font-size: 3.5rem;
+    }
+
+    .login-container {
+        padding: 15px;
+    }
+
+    .form-outline input {
+        padding: 8px;
+        font-size: 0.95rem;
+    }
+
+    .btn {
+        padding: 10px;
+        font-size: 1rem;
+    }
+
+    .form-check-label {
+        font-size: 0.8rem;
+    }
+
+    .left-section {
+        display: none;
+    }
+
+    .right-section {
+        width: 100% !important;
+    }
+}
+
+/* Adjust input fields and buttons for better mobile experience */
+.login-container {
+    width: 100%;
+    max-width: 350px;
+    padding: 20px;
+}
+
+/* Button styles */
+.btn-primary {
+    background-color: #003366;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #002244;
+}
+
+.btn-light {
+    background-color: #f8f9fa;
+    color: #003366;
+    border: 1px solid #003366;
+}
+
+.btn-light:hover {
+    background-color: #003366;
+    color: white;
+}
+
+/* Additional spacing for links and bottom text */
+.text-center a {
+    text-decoration: none;
+}
+
+.text-primary {
+    color: #003366;
+}
