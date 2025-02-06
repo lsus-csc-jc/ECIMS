@@ -13,7 +13,6 @@ router.register(r'order_items', OrderItemViewSet)
 router.register(r'customers', CustomerViewSet)
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('v1/', include(router.urls)),
     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
 ]
