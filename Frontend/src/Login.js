@@ -1,3 +1,4 @@
+// src/Login.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,23 +10,25 @@ const Login = ({ setToken }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Replace with your Django token endpoint URL
-    const response = await fetch('http://127.0.0.1:8000/api/token/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
-    const data = await response.json();
-
-    if (response.ok) {
-      // Save token in state and localStorage for persistence
-      setToken(data.access);
-      localStorage.setItem('accessToken', data.access);
-      // Redirect user to a protected route (adjust as needed)
-      navigate('/dashboard');
-    } else {
-      // Display error message from the backend
-      setError(data.detail || 'Invalid credentials');
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/token/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await response.json();
+      if (response.ok && data.access && data.refresh) {
+        // Store tokens in localStorage
+        localStorage.setItem('accessToken', data.access);
+        localStorage.setItem('refreshToken', data.refresh);
+        setToken(data.access);
+        // Navigate to the Dashboard
+        navigate('/dashboard');
+      } else {
+        setError(data.detail || 'Login failed');
+      }
+    } catch (err) {
+      setError('An error occurred during login.');
     }
   };
 
@@ -35,23 +38,21 @@ const Login = ({ setToken }) => {
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <form onSubmit={handleSubmit}>
         <div>
-          <label>Username:</label>
-          <input
-            type="text"
+          <label>Username: </label>
+          <input 
+            type="text" 
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="Enter your username"
-            required
+            required 
           />
         </div>
         <div>
-          <label>Password:</label>
-          <input
-            type="password"
+          <label>Password: </label>
+          <input 
+            type="password" 
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
-            required
+            required 
           />
         </div>
         <button type="submit">Login</button>
