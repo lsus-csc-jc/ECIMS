@@ -28,7 +28,7 @@ body {
 }
 
 .right-section {
-    background-color:white /* Dark background for the form */
+    background-color:white; /* Dark background for the form */
     padding: 20px;
     display: flex;
     justify-content: center;
