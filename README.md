@@ -63,19 +63,12 @@ The goal of ECIMS is to deliver a scalable and adaptable inventory management sy
 - **Frontend Development**  
   - Gabriela Caetano De Jesus
   - Joana Villanova
+  - Visar Rraci
 
 - **Backend Development**  
   - Jonathan Cockrell
   - Odai Alkhatib
-
-- **Database Design and Management**  
-  - Visar Rraci
-  - Gabriela Caetano De Jesus
-
-- **API Development**  
-  - Johnathan Cockrell
   - Kate Howell
-  - Joana Villanova
 
 - **Testing and Quality Assurance**  
   - TBD
