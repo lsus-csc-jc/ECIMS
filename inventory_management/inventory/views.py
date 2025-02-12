@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework import viewsets
+from django_filters.rest_framework import DjangoFilterBackend
 from .models import Item, Supplier, Category, Order, OrderItem, Customer
 from .serializers import ItemSerializer, SupplierSerializer, CategorySerializer, OrderSerializer, OrderItemSerializer, CustomerSerializer
 
@@ -12,6 +13,8 @@ class ItemViewSet(viewsets.ModelViewSet):
 class SupplierViewSet(viewsets.ModelViewSet):
     queryset = Supplier.objects.all()
     serializer_class = SupplierSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['name','date_added']
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -28,3 +31,5 @@ class OrderItemViewSet(viewsets.ModelViewSet):
 class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['first_name','last_name','date_added']

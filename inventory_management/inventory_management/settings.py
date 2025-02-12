@@ -43,6 +43,7 @@ INSTALLED_APPS = [
 ]
 
 INSTALLED_APPS += ['corsheaders']
+INSTALLED_APPS += ['django_filters']
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000", # allow frontend to connect
@@ -144,4 +145,5 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 }
