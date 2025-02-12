@@ -46,14 +46,21 @@ The goal of ECIMS is to deliver a scalable and adaptable inventory management sy
 
 - **Text Editor/IDE**: Visual Studio Code  
 - **Version Control**: Git and GitHub  
-- **Backend Development**: PHP and Django  
-- **Frontend Development**: React and Bootstrap  
-- **Database Management**: Azure SQL  
-- **API Development**: PHP and Django  
-- **Authentication**: Django (with JWT OAuth2)  
-- **Cloud Hosting**: Azure App Services  
-- **Containerization**: Docker  
-- **Testing Tools**: PHPUnit, Codeception, Behat, PHPSpec  
+- **Backend Development**:
+          - Language: Python
+          - Framework: Django
+          - Database: SQLite
+          - API Development: Django REST Framework
+          - Authentication: Django Authentication, DRF Token  
+- **Frontend Development**:
+          - Languages: HTML, CSS, JavaScript
+          - Frameworks: React, Vue, Bootstrap
+          - API Development: Node.js, Axios  
+- **Backend Deployment**: Render
+- **Frontend Deployment**: Vercel 
+- **Containerization**: Docker
+- **Frontend Deployment**: Vercel  
+- **Testing Tools**: Postman, Pytest, Redux 
 - **Project Management Tools**: GitHub
 
 ## How to Get Started - Coming Soon! 🚀 
