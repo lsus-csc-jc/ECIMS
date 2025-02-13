@@ -8,6 +8,7 @@ from .models import OrderItem
 from .models import StockMovement
 from .models import PurchaseOrder
 from .models import PurchaseOrderItem
+from .models import Report
 
 
 # Register your models here.
@@ -21,3 +22,4 @@ admin.site.register(OrderItem)
 admin.site.register(StockMovement)
 admin.site.register(PurchaseOrder)
 admin.site.register(PurchaseOrderItem)
+admin.site.register(Report)

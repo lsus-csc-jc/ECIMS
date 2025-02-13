@@ -111,3 +111,14 @@ class PurchaseOrderItem(models.Model):
     
     def __str__(self):
         return f"{self.quantity} x {self.item.name} in PO #{self.purchase_order.id}"
+
+#Represents reports
+class Report(models.Model):
+    name = models.CharField(max_length=100)
+    query = models.CharField(max_length=100)
+    #TODO: this needs to have a foreign key reference
+    modifying_user = models.PositiveIntegerField()
+    date_added = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.name}"

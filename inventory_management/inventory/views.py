@@ -1,8 +1,8 @@
 from django.shortcuts import render
 from rest_framework import viewsets
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Item, Supplier, Category, Order, OrderItem, Customer
-from .serializers import ItemSerializer, SupplierSerializer, CategorySerializer, OrderSerializer, OrderItemSerializer, CustomerSerializer
+from .models import Item, Supplier, Category, Order, OrderItem, Customer, Report
+from .serializers import ItemSerializer, SupplierSerializer, CategorySerializer, OrderSerializer, OrderItemSerializer, CustomerSerializer, ReportSerializer
 
 # Create your views here.
 
@@ -33,3 +33,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['first_name','last_name','date_added']
+
+class ReportViewSet(viewsets.ModelViewSet):
+    queryset = Report.objects.all()
+    serializer_class = ReportSerializer
