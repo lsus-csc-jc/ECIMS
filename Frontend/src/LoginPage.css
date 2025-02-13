@@ -1,0 +1,21 @@
+.left-section {
+  background-color: #343a40;
+  height: 100%;
+}
+
+.ecims-title {
+  font-family: 'Aldrich', sans-serif;
+}
+
+.subtitle {
+  font-family: 'Inter', sans-serif;
+}
+
+.right-section {
+  background-color: #f8f9fa;
+}
+
+.login-container {
+  max-width: 400px;
+  width: 100%;
+}

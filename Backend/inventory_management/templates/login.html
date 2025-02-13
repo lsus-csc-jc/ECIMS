@@ -1,0 +1,90 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ECIMS Login</title>
+  <!-- Bootstrap CSS (from CDN) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{% static 'css/Signup.css' %}">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Aldrich&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container-fluid vh-100 d-flex align-items-center justify-content-center">
+    <div class="row w-100 g-0">
+      <!-- Left Section -->
+      <div class="col-md-6 d-flex flex-column justify-content-center align-items-center text-white left-section">
+        <h1 class="display-1 fw-bold ecims-title">ECIMS</h1>
+        <p class="lead subtitle text-center px-3">Extensible Computerized Inventory Management System</p>
+      </div>
+      <!-- Right Section (Login Form) -->
+      <div class="col-md-6 d-flex justify-content-center align-items-center right-section">
+        <div class="w-100 p-4 login-container">
+          <h2 class="mb-3">Log in to your account</h2>
+          <form id="loginForm">
+            <div class="mb-3">
+              <label for="email" class="form-label">Email*</label>
+              <input type="email" class="form-control" id="email" placeholder="Enter your email" required>
+            </div>
+            <div class="mb-3">
+              <label for="password" class="form-label">Password*</label>
+              <input type="password" class="form-control" id="password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mb-3">Sign in</button>
+            <p id="loginMessage" class="text-danger text-center"></p>
+            <button type="button" class="btn btn-light w-100">
+              <img src="{% static 'images/google-icon.png' %}" alt="Google Logo" class="me-2" width="30"> Sign in with Google
+            </button>
+          </form>
+          <div class="text-center mt-3">
+            <span>Don't have an account?</span>
+            <a href="{% url 'signup' %}" class="text-primary">Sign up</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JavaScript (from CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Login Form JavaScript -->
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async function(event) {
+      event.preventDefault(); // Prevent the form from refreshing the page
+
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        // Send a POST request to your API login endpoint
+        const response = await fetch("/api/login/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email, password: password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // On success, store the token (and refresh token if provided)
+          localStorage.setItem("accessToken", data.token);
+          // Optionally, if a refresh token is returned, store it too:
+          // localStorage.setItem("refreshToken", data.refresh);
+          alert("Login successful!");
+          // Redirect to the dashboard page (assuming you have a URL named 'dashboard')
+          window.location.href = "{% url 'dashboard' %}";
+        } else {
+          // Display error message
+          document.getElementById("loginMessage").innerText = data.error || "Invalid credentials!";
+        }
+      } catch (error) {
+        document.getElementById("loginMessage").innerText = "Failed to connect to the server!";
+        console.error("Error during login:", error);
+      }
+    });
+  </script>
+</body>
+</html>

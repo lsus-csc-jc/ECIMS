@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './Login';
+import Signup from './Signup';
 import Dashboard from './Dashboard';
 
 function App() {
@@ -26,18 +27,23 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Login route: if no token, show Login; if token exists, redirect to Dashboard */}
+        {/* Login route: if token exists, redirect to Dashboard */}
         <Route
           path="/login"
-          element={!token ? <Login setToken={setToken} /> : <Navigate to="/dashboard" />}
+          element={!token ? <Login setToken={setToken} /> : <Navigate to="/dashboard" replace />}
         />
-        {/* Protected Dashboard route: passes the token and logout function */}
+        {/* Signup route */}
+        <Route
+          path="/signup"
+          element={<Signup />}
+        />
+        {/* Protected Dashboard route: only accessible if token exists */}
         <Route
           path="/dashboard"
-          element={token ? <Dashboard token={token} onLogout={logout} /> : <Navigate to="/login" />}
+          element={token ? <Dashboard token={token} onLogout={logout} /> : <Navigate to="/login" replace />}
         />
-        {/* Default route: redirect to /login */}
-        <Route path="/" element={<Navigate to="/login" />} />
+        {/* Fallback route: redirect any unknown URL to /login */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );

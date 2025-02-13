@@ -1,22 +1,30 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from datetime import timedelta
 
-# Load environment variables from .env file
+# Load environment variables from the .env file early
 load_dotenv()
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# Build paths inside the project like: BASE_DIR / 'subdir'
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: Keep secret key hidden in production!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'fallback-secret-key')  # Load from .env
+#############################################
+# SECURITY & ENVIRONMENT CONFIGURATION
+#############################################
 
-# SECURITY WARNING: Don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'  # Load from .env (Default: True)
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'fallback-secret-key')
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 
-# Application definition
+#############################################
+# APPLICATION DEFINITION
+#############################################
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -29,14 +37,14 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'rest_framework.authtoken',
+    'rest_framework_simplejwt',
 
     # Your apps
-    'inventory_management',  # Ensure this app contains your models, views, and serializers for products, items, etc.
+    'inventory_management',  # Contains your models, views, serializers, etc.
 ]
 
-# Middleware
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # Must be at the top
+    'corsheaders.middleware.CorsMiddleware',  # Must be near the top
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -46,24 +54,17 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# Cross-Origin Resource Sharing (CORS) settings
-CORS_ALLOW_ALL_ORIGINS = True  # Change to False in production
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # React frontend running locally
-    "http://127.0.0.1:3000",
-]
-CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-CORS_ALLOW_HEADERS = ["*"]
-
-# URL Configuration
 ROOT_URLCONF = 'inventory_management.urls'
 
-# Templates Configuration
+#############################################
+# TEMPLATES CONFIGURATION
+#############################################
+
+# Using a custom template directory located at BASE_DIR/inventory_management/templates
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / "templates"],  # Custom template directory
+        'DIRS': [BASE_DIR / "inventory_management" / "templates"],  # Ensure this points to the correct directory
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -76,10 +77,16 @@ TEMPLATES = [
     },
 ]
 
-# WSGI Application
+#############################################
+# WSGI APPLICATION
+#############################################
+
 WSGI_APPLICATION = 'inventory_management.wsgi.application'
 
-# Database Configuration
+#############################################
+# DATABASE CONFIGURATION
+#############################################
+
 DATABASES = {
     'default': {
         'ENGINE': os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
@@ -91,7 +98,10 @@ DATABASES = {
     }
 }
 
-# Password validation
+#############################################
+# PASSWORD VALIDATION
+#############################################
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -99,22 +109,36 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization settings
+#############################################
+# INTERNATIONALIZATION
+#############################################
+
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static & Media files
-STATIC_URL = 'static/'
-STATICFILES_DIRS = []
+#############################################
+# STATIC & MEDIA FILES
+#############################################
+
+STATIC_URL = '/static/'
+# Configure static files directory; update the path if your static files reside in a different location
+STATICFILES_DIRS = [BASE_DIR / "inventory_management" / "static"]
+
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# Default primary key field type
+#############################################
+# DEFAULT PRIMARY KEY FIELD TYPE
+#############################################
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Django REST Framework Settings
+#############################################
+# DJANGO REST FRAMEWORK SETTINGS
+#############################################
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -126,12 +150,43 @@ REST_FRAMEWORK = {
     ),
 }
 
-# Django Simple JWT Token Expiry Settings
-from datetime import timedelta
+#############################################
+# DJANGO SIMPLE JWT SETTINGS
+#############################################
+
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # 1 hour token validity
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Token valid for 1 hour
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
-    'AUTH_HEADER_TYPES': ('Bearer',),  # Uses 'Authorization: Bearer <token>'
+    'AUTH_HEADER_TYPES': ('Bearer',),  # Expect "Authorization: Bearer <token>"
 }
+
+#############################################
+# CORS CONFIGURATION
+#############################################
+
+CORS_ALLOW_ALL_ORIGINS = True  # Set to False in production
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # React frontend running locally
+    "http://127.0.0.1:3000",
+]
+CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+CORS_ALLOW_HEADERS = ["*"]
+
+#############################################
+# AUTHENTICATION BACKENDS
+#############################################
+
+AUTHENTICATION_BACKENDS = [
+    'inventory_management.backends.EmailBackend',  # Our custom email auth backend
+    'django.contrib.auth.backends.ModelBackend',   # Fallback to default
+]
+
+
+#############################################
+# CUSTOM USER MODEL
+#############################################
+
+

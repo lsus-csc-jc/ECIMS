@@ -1,24 +1,22 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import (
-    ProductViewSet,
-    ItemViewSet,
-    SupplierViewSet,
-    CategoryViewSet,
-    OrderViewSet,
-    OrderItemViewSet,
-    CustomerViewSet
+from inventory_management.views import (
+    ItemViewSet, SupplierViewSet, CategoryViewSet, OrderViewSet,
+    OrderItemViewSet, CustomerViewSet, ProductViewSet, api_login, api_root, api_signup
 )
 
 router = DefaultRouter()
-router.register(r'products', ProductViewSet)
-router.register(r'items', ItemViewSet)
-router.register(r'suppliers', SupplierViewSet)
-router.register(r'categories', CategoryViewSet)
-router.register(r'orders', OrderViewSet)
-router.register(r'order_items', OrderItemViewSet)
-router.register(r'customers', CustomerViewSet)
+router.register(r'items', ItemViewSet, basename="item")
+router.register(r'suppliers', SupplierViewSet, basename="supplier")
+router.register(r'categories', CategoryViewSet, basename="category")
+router.register(r'orders', OrderViewSet, basename="order")
+router.register(r'order-items', OrderItemViewSet, basename="order-item")
+router.register(r'customers', CustomerViewSet, basename="customer")
+router.register(r'products', ProductViewSet, basename="product")
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("", api_root, name="api-root"),
+    path("login/", api_login, name="api-login"),
+    path("signup/", api_signup, name="api-signup"),
+    path("", include(router.urls)),
 ]
