@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECIMS Signup</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="Signup.css">
+
+    <!-- Google Fonts: Aldrich (for logo) & Inter (for login form) -->
+    <link href="https://fonts.googleapis.com/css2?family=Aldrich&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+    <div class="container-fluid vh-100 d-flex align-items-center justify-content-center">
+        <div class="row w-100 g-0">
+            
+            <!-- Left Section (Hidden on Small Screens) -->
+            <div class="col-md-6 d-flex flex-column justify-content-center align-items-center text-white left-section">
+                <h1 class="display-1 fw-bold ecims-title">ECIMS</h1>
+                <p class="lead subtitle text-center px-3">Extensible Computerized Inventory Management System</p>
+            </div>
+
+            <!-- Right Section (Login Form) -->
+            <div class="col-md-6 d-flex justify-content-center align-items-center right-section">
+                <div class="w-100 p-4" style="max-width: 400px;">
+                    <h2 class="mb-3">Create an Account</h2>
+
+                    <form>
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Name*</label>
+                            <input type="text" class="form-control" id="name" placeholder="Enter your name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email*</label>
+                            <input type="email" class="form-control" id="email" placeholder="Enter your email" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password*</label>
+                            <input type="password" class="form-control" id="password" placeholder="Enter your password" required>
+                            <small class="text-muted">Password must be at least 8 characters.</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 mb-3">Get Started</button>
+
+                        <div class="text-center my-2"></div>
+
+                        <button type="button" class="btn btn-light w-100">
+                            <img src="google-icon.png" alt="Google Logo" class="me-2" width="30"> Sign in with Google
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <span>Already have an account?</span>
+                        <a href="login.html" class="text-primary">Log in</a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>
