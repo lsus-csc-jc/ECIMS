@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Item, Supplier, Category, Order, OrderItem, Customer, Report
 from .serializers import ItemSerializer, SupplierSerializer, CategorySerializer, OrderSerializer, OrderItemSerializer, CustomerSerializer, ReportSerializer
@@ -35,5 +36,15 @@ class CustomerViewSet(viewsets.ModelViewSet):
     filterset_fields = ['first_name','last_name','date_added']
 
 class ReportViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(modifying_user=self.request.user)
+        #return super().perform_create(serializer)
+    
+    def perform_update(self, serializer):
+        serializer.save(modifying_user=self.request.user)
+        #return super().perform_update(serializer)

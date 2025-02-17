@@ -1,4 +1,6 @@
 from django.db import models
+#from django.contrib.auth.models import User
+from django.conf import settings
 
 # Create your models here.
 
@@ -116,8 +118,7 @@ class PurchaseOrderItem(models.Model):
 class Report(models.Model):
     name = models.CharField(max_length=100)
     query = models.CharField(max_length=100)
-    #TODO: this needs to have a foreign key reference
-    modifying_user = models.PositiveIntegerField()
+    modifying_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, editable=False)
     date_added = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
