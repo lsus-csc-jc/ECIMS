@@ -11,6 +11,7 @@ class Customer(models.Model):
     address = models.TextField(blank=True, null=True)
     phone = models.CharField(max_length=20)
     email = models.EmailField()
+    date_modified = models.DateTimeField(auto_now=True)
     date_added = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
@@ -22,6 +23,7 @@ class Item(models.Model):
     description = models.TextField(blank=True, null=True)
     quantity = models.IntegerField(default=0)
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    date_modified = models.DateTimeField(auto_now=True)
     date_added = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
@@ -37,6 +39,7 @@ class Supplier(models.Model):
     address = models.TextField(blank=True, null=True)
     phone = models.CharField(max_length=20)
     email = models.EmailField()
+    date_modified = models.DateTimeField(auto_now=True)
     date_added = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
@@ -46,6 +49,7 @@ class Supplier(models.Model):
 class Category(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
+    date_modified = models.DateTimeField(auto_now=True)
     date_added = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
@@ -63,6 +67,9 @@ class Order(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=ORDER_STATUS, default='PENDING')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    date_modified = models.DateTimeField(auto_now=True)
+    #do we need this to be tracked twice?
+    date_added = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
         return f"Order #{self.order_number}"
@@ -89,6 +96,7 @@ class StockMovement(models.Model):
     quantity = models.IntegerField()
     date = models.DateTimeField(auto_now_add=True)
     remarks = models.TextField(blank=True, null=True)
+    #stock movements should be modifiable, so we do not need the other attribute here
     
     def __str__(self):
         return f"{self.movement_type} - {self.quantity} {self.item.name} on {self.date}"
@@ -100,6 +108,9 @@ class PurchaseOrder(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     received = models.BooleanField(default=False)
+    date_modified = models.DateTimeField(auto_now=True)
+    #does this data point need to be tracked twice?
+    date_added = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
         return f"Purchase Order #{self.id} to {self.supplier.name}"
@@ -110,6 +121,8 @@ class PurchaseOrderItem(models.Model):
     item = models.ForeignKey(Item, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    date_modified = models.DateTimeField(auto_now=True)
+    date_added = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
         return f"{self.quantity} x {self.item.name} in PO #{self.purchase_order.id}"
@@ -119,6 +132,7 @@ class Report(models.Model):
     name = models.CharField(max_length=100)
     query = models.CharField(max_length=100)
     modifying_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, editable=False)
+    date_modified = models.DateTimeField(auto_now=True)
     date_added = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
