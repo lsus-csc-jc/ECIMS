@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const targetPage = this.getAttribute("data-page");
 
                 if (targetPage) {
-                    window.location.href = targetPage; // Redirect to the selected page
+                    window.location.href = "/" + targetPage; // Redirect to the selected page
                 }
             });
         });
