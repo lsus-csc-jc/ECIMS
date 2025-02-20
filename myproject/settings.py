@@ -91,8 +91,9 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-STATICFILES_DIRS = [
-    BASE_DIR / 'core' / 'js',  # This tells Django to also look in the core/js directory.
-]
+#STATICFILES_DIRS = [
+#    BASE_DIR / 'core' / 'js',  # This tells Django to also look in the core/js directory.
+#]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+LOGIN_URL = 'login.html'

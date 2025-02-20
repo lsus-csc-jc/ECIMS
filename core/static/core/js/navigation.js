@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
             event.preventDefault(); // Prevent default link behavior
 
             // Clear authentication data (localStorage/sessionStorage)
+            //this does not seem to do anything.  I am not sure if the JS can even manipulate this storage, but if it can, the name is wrong - JC:20250220
             localStorage.removeItem("authToken"); // Clear token from localStorage
             sessionStorage.clear(); // Clear sessionStorage data
 
@@ -30,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // After 2 seconds, redirect to the login page
             setTimeout(function() {
-                window.location.href = "login.html"; // Redirect to the login page
+                window.location.href = "logout"; // Redirect to the login page
             }, 2000); // 2-second delay
         });
     }
