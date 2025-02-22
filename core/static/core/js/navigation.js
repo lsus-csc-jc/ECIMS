@@ -64,7 +64,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Call the function to fetch and update dashboard data on load
-    fetchDashboardData();
+    if (document.body.dataset.page === 'dashboard') {
+        fetchDashboardData();
+    }
 });
 
 

@@ -16,7 +16,7 @@
     <link href="{% static 'core/css/dashboard.css' %}" rel="stylesheet">
   </head>
 
-  <body>
+  <body data-page="dashboard">
     <!-- SVG Icons (hidden) -->
     <svg xmlns="http://www.w3.org/2000/svg" class="d-none">
       <symbol id="circle-half" viewBox="0 0 16 16">
@@ -194,7 +194,7 @@
                 <div class="card border-primary shadow-sm">
                   <div class="card-body">
                     <h5 class="card-title">Products</h5>
-                    <p class="display-4" id="total-products">0</p>
+                    <p class="display-4" id="total-products">?</p>
                   </div>
                 </div>
               </div>
@@ -202,7 +202,7 @@
                 <div class="card border-warning shadow-sm">
                   <div class="card-body">
                     <h5 class="card-title">Stock Alerts</h5>
-                    <p class="display-4" id="total-alerts">0</p>
+                    <p class="display-4" id="total-alerts">?</p>
                   </div>
                 </div>
               </div>
@@ -210,7 +210,7 @@
                 <div class="card border-danger shadow-sm">
                   <div class="card-body">
                     <h5 class="card-title">Pending Orders</h5>
-                    <p class="display-4" id="pending-orders">0</p>
+                    <p class="display-4" id="pending-orders">?</p>
                   </div>
                 </div>
               </div>
