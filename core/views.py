@@ -42,12 +42,20 @@ def dashboard_view(request):
     return render(request, 'dashboard.html')
 
 @login_required
+def invmanagement_view(request):
+    return render(request, 'invmanagement.html')
+
+@login_required
 def orders_view(request):
     return render(request, 'orders.html')
 
 @login_required
 def suppliers_view(request):
     return render(request, 'suppliers.html')
+
+@login_required
+def reports_view(request):
+    return render(request, 'reports.html')
 
 def logout_view(request):
     logout(request)
