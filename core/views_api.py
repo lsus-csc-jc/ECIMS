@@ -1,11 +1,22 @@
 # core/views_api.py
 from django.shortcuts import render
+from django.http import HttpResponse, JsonResponse
 from rest_framework import viewsets
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Profile, InventoryItem, Supplier, Order, OrderItem, Report
 from .serializers import ProfileSerializer, InventoryItemSerializer, SupplierSerializer, OrderSerializer, OrderItemSerializer, ReportSerializer
+
+def api_dashboard(request):
+    data = {
+        'totalProducts': InventoryItem.objects.count(),
+        'totalAlerts': 0,
+        'pendingOrders':0,
+        'status': 200
+    }
+    return JsonResponse(data)
+    #return HttpResponse("Hello world!")
 
 class ProfileListCreateAPIView(generics.ListCreateAPIView):
     queryset = Profile.objects.all()
