@@ -1,1 +1,1 @@
-web: gunicorn ECIMS.wsgi
+web: gunicorn myproject.wsgi
