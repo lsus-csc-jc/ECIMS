@@ -7,6 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'your-secret-key'
 DEBUG = True
 
+
 IS_HEROKU_APP = "DYNO" in os.environ and "CI" not in os.environ
 
 if IS_HEROKU_APP:
