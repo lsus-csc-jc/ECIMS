@@ -1,0 +1,3 @@
+gunicorn
+whitenoise
+django-filter
