@@ -57,6 +57,10 @@ def suppliers_view(request):
 def reports_view(request):
     return render(request, 'reports.html')
 
+@login_required
+def settings_view(request):
+    return render(request, 'settings.html')
+
 def logout_view(request):
     logout(request)
     messages.success(request, "You have been logged out.")
