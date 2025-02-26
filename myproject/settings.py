@@ -1,12 +1,16 @@
 import os
 from pathlib import Path
 import dj_database_url
+from dotenv import load_dotenv
+load_dotenv()
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'your-secret-key'
 DEBUG = True
-ALLOWED_HOSTS = ['ecims.onrender.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'ecims.onrender.com']
+
 
 
 
@@ -59,8 +63,9 @@ WSGI_APPLICATION = 'myproject.wsgi.application'
 
 # Use SQLite for simplicity
 DATABASES = {
-    'default': dj_database_url.config(default='sqlite:///db.sqlite3')
+    'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
 }
+
 
 
 AUTH_PASSWORD_VALIDATORS = [
