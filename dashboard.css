@@ -109,4 +109,34 @@
   }
 }
 
+/*Settings CSS*/
+.profile-container {
+  max-width: 600px;
+  height: 555px; /* Adjust as needed */
+  margin: 30px auto;
+  padding: 16px;
+  border-radius: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden; /* Prevent content overflow */
+}
+.section-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #007bff;
+  margin-bottom: 5px;
+}
+.form-control {
+  border-radius: 10px;
+}
+.btn-cancel {
+  background-color: #6c757d;
+  color: white;
+}
+.btn-update {
+  background-color: #007bff;
+  color: white;
+}
+.btn-cancel:hover, .btn-update:hover {
+  opacity: 0.9;
+}
 
