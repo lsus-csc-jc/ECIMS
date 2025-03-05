@@ -45,7 +45,7 @@ class InventoryItem(models.Model):
     description = models.TextField(blank=True)
     quantity = models.PositiveIntegerField(default=0)
     threshold = models.PositiveIntegerField(default=0)
-    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='inventory_items')
+    #supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='inventory_items')
     status = models.PositiveSmallIntegerField(choices=INV_STATUS_CHOICES,default=UNKNOWN)
     date_modified = models.DateTimeField(auto_now=True)
     date_added = models.DateTimeField(auto_now_add=True)
