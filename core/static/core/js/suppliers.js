@@ -66,7 +66,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Function to generate status badge
     function getStatusBadge(status) {
-        return status === "Active" 
+        return status === true
             ? '<span class="badge bg-success">Active</span>'
             : '<span class="badge bg-danger">Inactive</span>';
     }
@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const name = document.getElementById("supplierName").value.trim();
         const phone = document.getElementById("supplierPhone").value.trim();
         const email = document.getElementById("supplierEmail").value.trim();
-        const status = document.getElementById("supplierStatus").value; // ✅ Get selected status
+        const status = document.getElementById("supplierStatus").value === "Active" ? "1" : "0";; // ✅ Get selected status
 
         if (name && email) {
             const supplierData = {

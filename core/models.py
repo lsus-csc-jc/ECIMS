@@ -22,6 +22,7 @@ class Supplier(models.Model):
     contact_email = models.EmailField()
     phone = models.CharField(max_length=50, blank=True)
     address = models.TextField(blank=True)
+    status = models.BooleanField(default=True)
     date_modified = models.DateTimeField(auto_now=True)
     date_added = models.DateTimeField(auto_now_add=True)
 
@@ -30,12 +31,39 @@ class Supplier(models.Model):
 
 # Inventory item model
 class InventoryItem(models.Model):
+    INSTOCK = 3
+    LOWSTOCK = 2
+    OUTOFSTOCK = 1
+    UNKNOWN = 0
+    INV_STATUS_CHOICES = {
+        INSTOCK: "In Stock",
+        LOWSTOCK: "Low Stock",
+        OUTOFSTOCK: "Out of Stock",
+        UNKNOWN: "Unknown"
+    }
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     quantity = models.PositiveIntegerField(default=0)
+    threshold = models.PositiveIntegerField(default=0)
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='inventory_items')
+    status = models.PositiveSmallIntegerField(choices=INV_STATUS_CHOICES,default=UNKNOWN)
     date_modified = models.DateTimeField(auto_now=True)
     date_added = models.DateTimeField(auto_now_add=True)
+
+    def calculate_inv_status(self):
+        if (self.threshold > 0):
+            if self.quantity == 0:
+                return self.UNKNOWN
+            if (self.quantity <= self.threshold):
+                return self.LOWSTOCK
+            else:
+                return self.INSTOCK
+        else:
+            return self.OUTOFSTOCK
+        
+    def save(self, *args, **kwargs):
+        self.status = self.calculate_inv_status()
+        super().save(*args,**kwargs)
 
     def __str__(self):
         return self.name

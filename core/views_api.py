@@ -36,7 +36,7 @@ class SupplierViewSet(viewsets.ModelViewSet):
     queryset = Supplier.objects.all()
     serializer_class = SupplierSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['name','date_added']
+    filterset_fields = ['name','date_added','status']
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
