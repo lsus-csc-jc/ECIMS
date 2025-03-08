@@ -54,6 +54,15 @@ $(document).ready(function () {
         console.log("✅ Table Updated Successfully!");
     }
 
+    // ✅ Search Functionality
+    $("#searchInput").on("keyup", function () {
+        let value = $(this).val().toLowerCase();
+        $("#tableBody tr").each(function () {
+            let rowText = $(this).text().toLowerCase();
+            $(this).toggle(rowText.includes(value));
+        });
+    });
+
     // ✅ Handle Add New Product
     $("#addEntry").click(async function () {
         let productName = $("#addProduct").val().trim();
