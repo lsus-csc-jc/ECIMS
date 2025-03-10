@@ -53,13 +53,13 @@ class InventoryItem(models.Model):
     def calculate_inv_status(self):
         if (self.threshold > 0):
             if self.quantity == 0:
-                return self.UNKNOWN
+                return self.OUTOFSTOCK
             if (self.quantity <= self.threshold):
                 return self.LOWSTOCK
             else:
                 return self.INSTOCK
         else:
-            return self.OUTOFSTOCK
+            return self.UNKNOWN
         
     def save(self, *args, **kwargs):
         self.status = self.calculate_inv_status()

@@ -31,11 +31,19 @@ $(document).ready(function () {
         }
 
         data.forEach(item => {
-            let statusBadge = (item.quantity === 0) ? 
-                `<span class="badge bg-danger">Out-of-Stock</span>` : 
-                (item.quantity < item.threshold) ? 
-                    `<span class="badge bg-warning text-dark">Low-Stock</span>` : 
-                    `<span class="badge bg-success">In-Stock</span>`;
+            switch (item.status) {
+                case 3:
+                    statusBadge = `<span class="badge bg-success">In-Stock</span>`;
+                    break;
+                case 2:
+                    statusBadge = `<span class="badge bg-warning text-dark">Low-Stock</span>`;
+                    break;
+                case 1:
+                    statusBadge = `<span class="badge bg-danger">Out-of-Stock</span>`;
+                    break;
+                default:
+                    statusBadge = `<span class="badge bg-warning text-dark">Unknown</span>`;
+            }
 
             let row = `
                 <tr data-id="${item.id}">
