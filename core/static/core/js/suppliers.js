@@ -4,8 +4,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const supplierTableBody = document.getElementById("supplierTableBody");
     const modalTitle = document.getElementById("addSupplierModalLabel");
     const submitButton = supplierForm.querySelector("button[type='submit']");
+    const searchInput = document.getElementById("search"); // Search input field
     let editMode = false;
     let editRow = null;
+    let suppliersData = []; // Store suppliers for filtering
 
     // Initialize Bootstrap Modal
     const supplierModal = new bootstrap.Modal(document.getElementById("addSupplierModal"), { keyboard: false, backdrop: "static" });
@@ -32,6 +34,7 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(response => response.json())
         .then(data => {
             console.log("Fetched Suppliers:", data);
+            suppliersData = data; // Store data globally for search
             updateSupplierTable(data);
         })
         .catch(error => console.error('Error fetching supplier data:', error));
@@ -43,8 +46,9 @@ document.addEventListener("DOMContentLoaded", function () {
         data.forEach(supplier => {
             const row = document.createElement("tr");
             row.dataset.id = supplier.id;
+            row.classList.add("supplier-row"); // Added class for search functionality
             row.innerHTML = `
-                <td>${supplier.name}</td>
+                <td class="supplier-name">${supplier.name}</td>
                 <td>${supplier.phone || 'N/A'}</td>
                 <td class="status-badge">${getStatusBadge(supplier.status)}</td>
                 <td>
@@ -71,6 +75,13 @@ document.addEventListener("DOMContentLoaded", function () {
             : '<span class="badge bg-danger">Inactive</span>';
     }
 
+    // ✅ Search functionality: Filter suppliers as user types
+    searchInput.addEventListener("keyup", function () {
+        let filter = searchInput.value.toLowerCase();
+        let filteredData = suppliersData.filter(supplier => supplier.name.toLowerCase().includes(filter));
+        updateSupplierTable(filteredData);
+    });
+
     // Fetch suppliers on page load
     fetchSuppliers();
 
@@ -81,14 +92,14 @@ document.addEventListener("DOMContentLoaded", function () {
         const name = document.getElementById("supplierName").value.trim();
         const phone = document.getElementById("supplierPhone").value.trim();
         const email = document.getElementById("supplierEmail").value.trim();
-        const status = document.getElementById("supplierStatus").value === "Active" ? "1" : "0";; // ✅ Get selected status
+        const status = document.getElementById("supplierStatus").value === "Active" ? "1" : "0"; 
 
         if (name && email) {
             const supplierData = {
                 name: name,
                 phone: phone,
                 contact_email: email,
-                status: status  // ✅ Save the correct status value
+                status: status
             };
 
             let apiUrl = '/api/v1/suppliers/';
@@ -104,7 +115,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 method: requestMethod,
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRFToken": getCSRFToken()  // Include CSRF Token
+                    "X-CSRFToken": getCSRFToken()
                 },
                 body: JSON.stringify(supplierData)
             })
@@ -137,7 +148,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 fetch(`/api/v1/suppliers/${supplierId}/`, {
                     method: "DELETE",
                     headers: {
-                        "X-CSRFToken": getCSRFToken()  // Include CSRF Token
+                        "X-CSRFToken": getCSRFToken()
                     }
                 })
                 .then(() => {
@@ -163,7 +174,6 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById("supplierPhone").value = row.cells[1].innerText;
             document.getElementById("supplierEmail").value = emailRow.querySelector("span").innerText;
 
-            // ✅ Fix: Correctly read status and update the dropdown
             let statusText = row.cells[2].innerText.trim();
             document.getElementById("supplierStatus").value = statusText === "Active" ? "Active" : "Inactive";
 
