@@ -4,127 +4,190 @@ document.addEventListener("DOMContentLoaded", function () {
     const supplierTableBody = document.getElementById("supplierTableBody");
     const modalTitle = document.getElementById("addSupplierModalLabel");
     const submitButton = supplierForm.querySelector("button[type='submit']");
+    const searchInput = document.getElementById("search"); // Search input field
     let editMode = false;
     let editRow = null;
-  
+    let suppliersData = []; // Store suppliers for filtering
+
     // Initialize Bootstrap Modal
     const supplierModal = new bootstrap.Modal(document.getElementById("addSupplierModal"), { keyboard: false, backdrop: "static" });
-  
-    // Add or Edit Supplier
-    supplierForm.addEventListener("submit", function (event) {
-        event.preventDefault(); // Prevent default form submission behavior
-  
-        // Get form values
-        const name = document.getElementById("supplierName").value.trim();
-        const phone = document.getElementById("supplierPhone").value.trim();
-        const email = document.getElementById("supplierEmail").value.trim();
-        const status = document.getElementById("supplierStatus").value;
-  
-        if (name && phone && email) {
-            if (editMode && editRow) {
-                // Update existing row
-                editRow.cells[0].innerText = name;
-                editRow.cells[1].innerText = phone;
-                editRow.cells[2].innerHTML = getStatusBadge(status);
-                editRow.nextElementSibling.querySelector("span").innerText = email;
-                
-                // Reset edit mode
-                editMode = false;
-                editRow = null;
-            } else {
-                // Create a new row
-                const newRow = document.createElement("tr");
-                newRow.innerHTML = `
-                    <td>${name}</td>
-                    <td>${phone}</td>
-                    <td class="status-badge">${getStatusBadge(status)}</td>
-                    <td>
-                        <button class="btn btn-info btn-sm toggleEmail">+</button>
-                        <button class="btn btn-sm btn-outline-primary editBtn"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-sm btn-outline-danger deleteBtn"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-  
-                // Hidden row for email
-                const emailRow = document.createElement("tr");
-                emailRow.classList.add("emailRow");
-                emailRow.style.display = "none";
-                emailRow.innerHTML = `
-                    <td colspan="4">Email: <span>${email}</span></td>
-                `;
-  
-                // Append rows to the table body
-                supplierTableBody.appendChild(newRow);
-                supplierTableBody.appendChild(emailRow);
+
+    // Function to get CSRF token from cookies
+    function getCSRFToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith('csrftoken=')) {
+                    cookieValue = cookie.substring('csrftoken='.length, cookie.length);
+                    break;
+                }
             }
-  
-            // Reset form fields
-            supplierForm.reset();
-  
-            // Close the modal programmatically
-            supplierModal.hide();
         }
-    });
-  
+        return cookieValue;
+    }
+
+    // Fetch Supplier Data from API
+    function fetchSuppliers() {
+        fetch('/api/v1/suppliers/')
+        .then(response => response.json())
+        .then(data => {
+            console.log("Fetched Suppliers:", data);
+            suppliersData = data; // Store data globally for search
+            updateSupplierTable(data);
+        })
+        .catch(error => console.error('Error fetching supplier data:', error));
+    }
+
+    // Update supplier table with fetched data
+    function updateSupplierTable(data) {
+        supplierTableBody.innerHTML = '';
+        data.forEach(supplier => {
+            const row = document.createElement("tr");
+            row.dataset.id = supplier.id;
+            row.classList.add("supplier-row"); // Added class for search functionality
+            row.innerHTML = `
+                <td class="supplier-name">${supplier.name}</td>
+                <td>${supplier.phone || 'N/A'}</td>
+                <td class="status-badge">${getStatusBadge(supplier.status)}</td>
+                <td>
+                    <button class="btn btn-info btn-sm toggleEmail">+</button>
+                    <button class="btn btn-sm btn-outline-primary editBtn"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-danger deleteBtn"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+
+            const emailRow = document.createElement("tr");
+            emailRow.classList.add("emailRow");
+            emailRow.style.display = "none";
+            emailRow.innerHTML = `<td colspan="4">Email: <span>${supplier.contact_email || 'N/A'}</span></td>`;
+
+            supplierTableBody.appendChild(row);
+            supplierTableBody.appendChild(emailRow);
+        });
+    }
+
     // Function to generate status badge
     function getStatusBadge(status) {
-        return status === "Active" 
+        return status === true
             ? '<span class="badge bg-success">Active</span>'
             : '<span class="badge bg-danger">Inactive</span>';
     }
-  
+
+    // ✅ Search functionality: Filter suppliers as user types
+    searchInput.addEventListener("keyup", function () {
+        let filter = searchInput.value.toLowerCase();
+        let filteredData = suppliersData.filter(supplier => supplier.name.toLowerCase().includes(filter));
+        updateSupplierTable(filteredData);
+    });
+
+    // Fetch suppliers on page load
+    fetchSuppliers();
+
+    // Add or Edit Supplier
+    supplierForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const name = document.getElementById("supplierName").value.trim();
+        const phone = document.getElementById("supplierPhone").value.trim();
+        const email = document.getElementById("supplierEmail").value.trim();
+        const status = document.getElementById("supplierStatus").value === "Active" ? "1" : "0"; 
+
+        if (name && email) {
+            const supplierData = {
+                name: name,
+                phone: phone,
+                contact_email: email,
+                status: status
+            };
+
+            let apiUrl = '/api/v1/suppliers/';
+            let requestMethod = "POST";
+
+            if (editMode && editRow) {
+                const supplierId = editRow.dataset.id;
+                apiUrl = `/api/v1/suppliers/${supplierId}/`;
+                requestMethod = "PUT";
+            }
+
+            fetch(apiUrl, {
+                method: requestMethod,
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCSRFToken()
+                },
+                body: JSON.stringify(supplierData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Supplier saved:", data);
+                fetchSuppliers();
+            })
+            .catch(error => console.error("Error saving supplier:", error));
+
+            supplierForm.reset();
+            supplierModal.hide();
+            editMode = false;
+            editRow = null;
+        }
+    });
+
     // Event delegation for delete button, toggle email, and edit functionality
     supplierTableBody.addEventListener("click", function (event) {
         const target = event.target.closest("button");
         if (!target) return;
-        
-        // ✅ Updated: Delete Button with Confirmation
+
+        // Delete Supplier
         if (target.classList.contains("deleteBtn")) {
             let confirmation = confirm("Are you sure you want to delete this supplier?");
             if (confirmation) {
-                let emailRow = target.closest("tr").nextElementSibling;
-                if (emailRow && emailRow.classList.contains("emailRow")) {
-                    emailRow.remove(); // Remove hidden email row
-                }
-                target.closest("tr").remove(); // Remove main row
+                let row = target.closest("tr");
+                let supplierId = row.dataset.id;
+
+                fetch(`/api/v1/suppliers/${supplierId}/`, {
+                    method: "DELETE",
+                    headers: {
+                        "X-CSRFToken": getCSRFToken()
+                    }
+                })
+                .then(() => {
+                    console.log("Supplier deleted:", supplierId);
+                    fetchSuppliers();
+                })
+                .catch(error => console.error("Error deleting supplier:", error));
             }
         }
-  
+
         // Toggle email row visibility
         if (target.classList.contains("toggleEmail")) {
             let emailRow = target.closest("tr").nextElementSibling;
             emailRow.style.display = emailRow.style.display === "none" ? "table-row" : "none";
         }
-  
-        // Edit Supplier Functionality
+
+        // Edit Supplier
         if (target.classList.contains("editBtn")) {
             let row = target.closest("tr");
             let emailRow = row.nextElementSibling;
-  
-            let name = row.cells[0].innerText;
-            let phone = row.cells[1].innerText;
-            let email = emailRow.querySelector("span").innerText;
-            let status = row.cells[2].querySelector("span").innerText;
-  
-            document.getElementById("supplierName").value = name;
-            document.getElementById("supplierPhone").value = phone;
-            document.getElementById("supplierEmail").value = email;
-            document.getElementById("supplierStatus").value = status;
-  
-            // Set edit mode
+
+            document.getElementById("supplierName").value = row.cells[0].innerText;
+            document.getElementById("supplierPhone").value = row.cells[1].innerText;
+            document.getElementById("supplierEmail").value = emailRow.querySelector("span").innerText;
+
+            let statusText = row.cells[2].innerText.trim();
+            document.getElementById("supplierStatus").value = statusText === "Active" ? "Active" : "Inactive";
+
             editMode = true;
             editRow = row;
-  
-            // Change modal title and button text
+
             modalTitle.innerText = "Edit Supplier";
             submitButton.innerText = "Save Changes";
-  
-            // Open the modal for editing
+
             supplierModal.show();
         }
     });
-  
-    // Reset modal title and button text when opening to add a new supplier
+
+    // Reset modal title and button text when adding a new supplier
     document.querySelector("button[data-bs-target='#addSupplierModal']").addEventListener("click", function () {
         editMode = false;
         editRow = null;
@@ -132,4 +195,4 @@ document.addEventListener("DOMContentLoaded", function () {
         submitButton.innerText = "Save Supplier";
         supplierForm.reset();
     });
-  });
+});
