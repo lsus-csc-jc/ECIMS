@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import login_page, signup_page, dashboard_view, invmanagement_view, orders_view, suppliers_view, reports_view, settings_view, logout_view
+from .views import login_page, signup_page, dashboard_view, invmanagement_view, orders_view, save_order, suppliers_view, reports_view, settings_view, logout_view
 
 urlpatterns = [
     path('', dashboard_view, name='home'),  # This handles the root URL "/"
@@ -8,6 +8,7 @@ urlpatterns = [
     path('dashboard.html', dashboard_view, name='dashboard'),
     path('invmanagement.html', invmanagement_view, name='invmanagement'),
     path('orders.html', orders_view, name='orders'),
+    path('save_order/', save_order, name='save_order'),
     path('suppliers.html', suppliers_view, name='suppliers'),
     path('reports.html', reports_view, name='reports'),
     path('settings.html', settings_view, name='settings'),

@@ -220,8 +220,8 @@
                                     <select id="statusFilter" class="form-control" onchange="filterOrders()">
                                         <option value="">All Statuses</option>
                                         <option value="Pending">Pending</option>
-                                        <option value="Delivered">Delivered</option>
-                                        <option value="Returned">Returned</option>
+                                        <option value="Completed">Completed</option>
+                                        <option value="Canceled">Canceled</option>
                                     </select>
                                 </div>
                                 
@@ -241,40 +241,39 @@
 
                             <!-- Table Section -->
                             <div class="table-responsive">
-            <table class="table table-striped">
-              <thead>
-                <tr>
-                  <th>Products</th>
-                  <th>Quantity</th>
-                  <th>Order ID</th>
-                  <th>Expected Delivery</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Chicken, Lettuce</td>
-                  <td>43, 12, 20</td>
-                  <td>7535</td>
-                  <td>11/12/22</td>
-                  <td class="text-warning">Pending</td>
-                </tr>
-                <tr>
-                  <td>Chips, Fries, Brussel Sprout</td>
-                  <td>22, 13, 14</td>
-                  <td>5724</td>
-                  <td>21/12/22</td>
-                  <td class="text-success">Delivered</td>
-                </tr>
-                <tr>
-                  <td>Red Bull, Monster, Gatorade</td>
-                  <td>36, 20, 20</td>
-                  <td>2775</td>
-                  <td>5/12/22</td>
-                  <td class="text-danger">Returned</td>
-                </tr>
-              </tbody>
-            </table>
+                              <table class="table table-striped">
+                                <thead>
+                                  <tr>
+                                    <th>Products</th>
+                                    <th>Quantity</th>
+                                    <th>Order ID</th>
+                                    <th>Expected Delivery</th>
+                                    <th>Status</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {% for order in orders %}
+                                  <tr>
+                                    <td>{{ order.product }}</td>
+                                    <td>{{ order.quantity }}</td>
+                                    <td>{{ order.order_number }}</td>
+                                    <td>
+                                      {% if order.expected_delivery %}
+                                        {{ order.expected_delivery|date:"m/d/Y" }}
+                                      {% else %}
+                                        N/A
+                                      {% endif %}
+                                    </td>
+                                    <td>{{ order.get_status_display }}</td>
+                                  </tr>
+                                  {% empty %}
+                                  <tr>
+                                    <td colspan="5">No orders found.</td>
+                                  </tr>
+                                  {% endfor %}
+                                </tbody>
+                              </table>
+                              
           </div>
                         </div>
         </main>

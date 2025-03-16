@@ -73,22 +73,25 @@ class InventoryItem(models.Model):
 
 # Order model
 class Order(models.Model):
-    ORDER_STATUS = [
+    ORDER_STATUS = (
         ('PENDING', 'Pending'),
         ('COMPLETED', 'Completed'),
         ('CANCELLED', 'Cancelled'),
-    ]
-
+    )
     order_number = models.CharField(max_length=100, unique=True)
     date_ordered = models.DateTimeField(auto_now_add=True)
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='orders')
     status = models.CharField(max_length=20, choices=ORDER_STATUS, default='PENDING')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    # New fields added:
+    product = models.CharField(max_length=255, blank=True, null=True)
+    quantity = models.PositiveIntegerField(blank=True, null=True)
+    expected_delivery = models.DateField(blank=True, null=True)
     date_modified = models.DateTimeField(auto_now=True)
-    # If needed, you can later add fields like total price, etc.
 
     def __str__(self):
         return self.order_number
+
 
 # Through model to represent items in an order
 class OrderItem(models.Model):
