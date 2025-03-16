@@ -7,11 +7,14 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Profile, InventoryItem, Supplier, Order, OrderItem, Report
 from .serializers import ProfileSerializer, InventoryItemSerializer, SupplierSerializer, OrderSerializer, OrderItemSerializer, ReportSerializer
+from django.db.models import F
+
 
 def api_dashboard(request):
+    low_stock_count = InventoryItem.objects.filter(quantity__lt=F('threshold')).count()
     data = {
         'totalProducts': InventoryItem.objects.count(),
-        'totalAlerts': 0,
+        'totalAlerts': low_stock_count,
         'pendingOrders':0,
         'status': 200
     }
