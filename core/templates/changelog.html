@@ -1,19 +1,20 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="auto">
   <head>
-    <script src="color-modes.js"></script>
+    <script src="{% static 'core/js/color-modes.js' %}"></script>
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ECIMS - Change Log</title>
     
     <!-- Bootstrap and Icons -->
-    <link href="bootstrap.min.css" rel="stylesheet">
+    <link href="{% static 'core/css/bootstrap.min.css' %}" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <!-- Custom styles -->
-    <link href="dashboard.css" rel="stylesheet">
+    <link href="{% static 'core/css/dashboard.css' %}" rel="stylesheet">
   </head>
 
   <body>
@@ -237,10 +238,9 @@
 
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="bootstrap.bundle.min.js"></script>
-    <script src="color-modes.js"></script>
-    <script src="navigation.js"></script>
-    <script src="changelog.js"></script>
+    <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'core/js/color-modes.js' %}"></script>
+    <script src="{% static 'core/js/navigation.js' %}"></script>
     
     <!-- Simple filterChangeLogs function -->
     <script>
