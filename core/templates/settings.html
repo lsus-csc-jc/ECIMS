@@ -167,12 +167,12 @@
                         <ul class="nav flex-column mb-auto">
                           {% if user.is_superuser %}
                           <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center gap-2" href="#" data-page="settings.html">
+                            <a class="nav-link d-flex align-items-center gap-2" href="#" data-page="settings">
                               <svg class="bi"><use xlink:href="#gear-wide-connected"/></svg>
                               Settings
                             </a>
                           </li>
-                        {% endif %}
+                          {% endif %}
                           <li class="nav-item">
                             <a class="nav-link d-flex align-items-center gap-2" href="#" id="logoutBtn">
                               <svg class="bi"><use xlink:href="#door-closed"/></svg>
@@ -288,38 +288,38 @@
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <form id="addUserForm">
-                                        <div class="mb-3">
-                                            <label for="name" class="form-label">Name</label>
-                                            <input type="text" class="form-control" id="name" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="email" class="form-label">Email</label>
-                                            <input type="email" class="form-control" id="email" required>
-                                        </div>
-                                        <div class="mb-3">
-                                          <label for="password" class="form-label">Password</label>
-                                          <div class="input-group">
-                                              <input type="password" class="form-control" id="password" required>
-                                              <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                                                  👁️
-                                              </button>
-                                          </div>
+                                  <form id="addUserForm" action="{% url 'add_user' %}" method="post">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                      <label for="name" class="form-label">Name</label>
+                                      <input type="text" class="form-control" id="name" name="name" required>
+                                    </div>
+                                    <div class="mb-3">
+                                      <label for="email" class="form-label">Email</label>
+                                      <input type="email" class="form-control" id="email" name="email" required>
+                                    </div>
+                                    <div class="mb-3">
+                                      <label for="password" class="form-label">Password</label>
+                                      <div class="input-group">
+                                        <input type="password" class="form-control" id="password" name="password" required>
+                                        <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                          👁️
+                                        </button>
                                       </div>
-                                        <div class="mb-3">
-                                            <label for="role" class="form-label">Role</label>
-                                            <select class="form-control" id="role" required>
-                                                <option value="Admin">Admin</option>
-                                                <option value="Manager">Manager</option>
-                                                <option value="Employee">Employee</option>
-                                            </select>
-                                        </div>
-                                        <button type="submit" class="btn btn-success">Save User</button>
-                                    </form>
+                                    </div>
+                                    <div class="mb-3">
+                                      <label for="role" class="form-label">Role</label>
+                                      <select class="form-control" id="role" name="role" required>
+                                        <option value="Manager">Manager</option>
+                                        <option value="Employee">Employee</option>
+                                      </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-success">Save User</button>
+                                  </form>
                                 </div>
+                              </div>
                             </div>
-                        </div>
-                    </div>
+                          </div>
                     <!-- User Table -->
                     <table class="table mt-3 text-white">
                         <thead>

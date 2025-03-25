@@ -11,14 +11,14 @@ from django.db.models import F
 
 
 def api_dashboard(request):
-    low_stock_count = InventoryItem.objects.filter(quantity__lt=F('threshold')).count()
     data = {
         'totalProducts': InventoryItem.objects.count(),
-        'totalAlerts': low_stock_count,
-        'pendingOrders':0,
-        'status': 200
+        'totalAlerts': InventoryItem.objects.filter(status=InventoryItem.LOWSTOCK).count(),
+        'pendingOrders': Order.objects.filter(status='PENDING').count(),
+            'status': 200
     }
     return JsonResponse(data)
+
     #return HttpResponse("Hello world!")
 
 class ProfileListCreateAPIView(generics.ListCreateAPIView):
