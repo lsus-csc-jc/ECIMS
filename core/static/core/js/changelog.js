@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Fetch Change Log Entries from API
     function fetchChangeLogs() {
-        fetch('/api/changelog/')
+        fetch('/api/v1/changelog/')
         .then(response => response.json())
         .then(data => {
             console.log("Fetched Change Logs:", data);

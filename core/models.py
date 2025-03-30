@@ -3,6 +3,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.conf import settings
+#from django.contrib.auth.models import User
 
 User = get_user_model()
 
@@ -25,6 +26,22 @@ class Supplier(models.Model):
     status = models.BooleanField(default=True)
     date_modified = models.DateTimeField(auto_now=True)
     date_added = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            original = Supplier.objects.get(pk=self.pk)
+            fields = Supplier._meta.concrete_fields
+            changedfields = []
+            for field in fields:
+                if getattr(original,field.name) != getattr(self,field.name):
+                    Changelog.objects.create(
+                        model_name="Supplier",
+                        record_id=self.pk,
+                        field_name=field.name,
+                        old_value=getattr(original,field.name),
+                        new_value=getattr(self,field.name),
+                )
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -63,6 +80,19 @@ class InventoryItem(models.Model):
         
     def save(self, *args, **kwargs):
         self.status = self.calculate_inv_status()
+        if self.pk is not None:
+            original = InventoryItem.objects.get(pk=self.pk)
+            fields = InventoryItem._meta.concrete_fields
+            changedfields = []
+            for field in fields:
+                if getattr(original,field.name) != getattr(self,field.name):
+                    Changelog.objects.create(
+                        model_name="InventoryItem",
+                        record_id=self.pk,
+                        field_name=field.name,
+                        old_value=getattr(original,field.name),
+                        new_value=getattr(self,field.name),
+                )
         super().save(*args,**kwargs)
 
     def __str__(self):
@@ -136,3 +166,16 @@ class Report(models.Model):
     
     def __str__(self):
         return f"{self.name}"
+
+#Represents changelog
+class Changelog(models.Model):
+    model_name = models.CharField(max_length=100)
+    record_id = models.IntegerField()
+    field_name = models.CharField(max_length=100)
+    old_value = models.CharField(max_length=255, null=True)
+    new_value = models.CharField(max_length=255, null=True)
+    executing_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, editable=False)
+    date_executed = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.record_id}: {self.model_name} change {self.field_name} from {self.old_value} to {self.new_value}"
