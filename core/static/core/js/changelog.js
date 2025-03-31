@@ -23,11 +23,11 @@ document.addEventListener("DOMContentLoaded", function () {
         data.forEach(entry => {
             const row = document.createElement("tr");
             row.innerHTML = `
-                <td>${entry.timestamp}</td>
+                <td>${entry.date_executed}</td>
                 <td>${entry.employee_name}</td>
-                <td>${entry.action_type}</td>
-                <td>${entry.product_info}</td>
-                <td>${entry.status}</td>
+                <td>Updated ${entry.model_name} ${entry.field_name}</td>
+                <td>${entry.old_value} -> ${entry.new_value}</td>
+                <td>none</td>
             `;
             changeLogTableBody.appendChild(row);
         });
