@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const row = document.createElement("tr");
             row.innerHTML = `
                 <td>${entry.date_executed}</td>
-                <td>${entry.employee_name}</td>
+                <td>${entry.executing_user}</td>
                 <td>Updated ${entry.model_name} ${entry.field_name}</td>
                 <td>${entry.old_value} -> ${entry.new_value}</td>
                 <td>none</td>
@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", function () {
     searchInput.addEventListener("keyup", function () {
         const filter = searchInput.value.toLowerCase();
         const filteredLogs = changelogData.filter(entry => {
-            const combined = `${entry.timestamp} ${entry.employee_name} ${entry.action_type} ${entry.product_info} ${entry.status}`.toLowerCase();
+            const combined = `${entry.date_executed} ${entry.executing_user} ${entry.model_name} ${entry.field_name} ${entry.status}`.toLowerCase();
             return combined.includes(filter);
         });
         updateChangeLogTable(filteredLogs);
