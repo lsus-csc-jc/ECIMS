@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0007_delete_notification'),
+        
         ('core', '0008_order_expected_delivery_alter_profile_role'),
     ]
 

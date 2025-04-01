@@ -1,6 +1,7 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login, logout, get_user_model
+from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden
@@ -118,6 +119,51 @@ def add_user(request):
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)})
 
+def reset_user_password(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        if new_password and new_password == confirm_password:
+            user.set_password(new_password)  # This hashes the new password
+            user.save()
+            messages.success(request, "Password reset successfully!")
+            return redirect('settings')  # Change to your desired redirect
+        else:
+            messages.error(request, "Passwords do not match or are empty.")
+    return render(request, 'reset_password.html', {'user': user})
+
+
+def delete_user(request, user_id):
+    if request.method == 'POST':
+        # Optional: check if the request.user is allowed to delete
+        user_to_delete = get_object_or_404(User, pk=user_id)
+        user_to_delete.delete()
+        messages.success(request, 'User deleted successfully.')
+    return redirect('settings')  # or wherever you want to go after deletion
+
+def edit_user(request, user_id):
+    user_to_edit = get_object_or_404(User, pk=user_id)
+
+    if request.method == 'POST':
+        new_username = request.POST.get('username')
+        new_email = request.POST.get('email')
+        new_role = request.POST.get('role')
+        
+        # Update fields as needed
+        user_to_edit.username = new_username
+        user_to_edit.email = new_email
+        user_to_edit.profile.role = new_role
+        user_to_edit.profile.save()
+        user_to_edit.save()
+        
+        messages.success(request, 'User updated successfully.')
+        return redirect('settings')  # or some other page
+
+    # If GET request, render a form pre-filled with user info
+    return render(request, 'edit_user.html', {'user_to_edit': user_to_edit})
+
+
 @role_required(['Manager', 'Employee'])
 def view_inventory(request):
     # Logic to display inventory (implement your logic as needed)
@@ -138,10 +184,9 @@ def delete_inventory_item(request, item_id):
 
 @login_required
 def settings_view(request):
-    # Only superusers (owner) should access settings
     if not request.user.is_superuser:
         return HttpResponseForbidden("Access Denied")
-    users = User.objects.all()
+    users = User.objects.all().select_related("profile")
     return render(request, 'settings.html', {'users': users})
 
 @login_required
