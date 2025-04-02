@@ -10,11 +10,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='order',
-            name='expected_delivery',
-            field=models.DateField(blank=True, null=True),
-        ),
         migrations.AlterField(
             model_name='profile',
             name='role',
