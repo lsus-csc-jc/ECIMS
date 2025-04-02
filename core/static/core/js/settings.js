@@ -1,34 +1,27 @@
 document.addEventListener("DOMContentLoaded", function () {
     const addUserForm = document.getElementById("addUserForm");
-    const tableBody = document.getElementById("userTableBody"); // Ensure your HTML <tbody> has id="userTableBody"
-    
+    const tableBody = document.getElementById("userTableBody");
+
     if (!tableBody) {
-        console.error("userTableBody not found. Please ensure your <tbody> in the user table has id='userTableBody'.");
+        console.error("userTableBody not found.");
+        return;
     }
-    
-    // Helper function to get CSRF token from cookies
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== "") {
-            const cookies = document.cookie.split(";");
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.startsWith(name + "=")) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
+
+    // Attach listeners to Django-rendered rows
+    document.querySelectorAll("#userTableBody tr").forEach(row => {
+        const editBtn = row.querySelector(".edit-user");
+        if (editBtn) {
+            editBtn.addEventListener("click", function () {
+                editUser(row);
+            });
         }
-        return cookieValue;
-    }
-    
+    });
+
+    // Add user submit handler
     addUserForm.addEventListener("submit", function (event) {
-        event.preventDefault(); // Prevent default form submission
-        console.log("Add User form submitted");
-        
-        // Create FormData from the form fields
+        event.preventDefault();
         const formData = new FormData(addUserForm);
-        
+
         fetch(addUserForm.action, {
             method: "POST",
             body: formData,
@@ -40,27 +33,32 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log("User saved:", data.user);
-                // Add the new user to the table using data from the backend
                 addUserToTable(data.user.username, data.user.email, data.user.role);
                 addUserForm.reset();
-                
-                // Close the modal after saving
-                const modalEl = document.getElementById("addUserModal");
-                const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                modalInstance.hide();
+                bootstrap.Modal.getInstance(document.getElementById("addUserModal")).hide();
             } else {
                 alert("Error saving user: " + data.error);
             }
         })
-        .catch(error => {
-            console.error("Error submitting form:", error);
-        });
+        .catch(error => console.error("Error:", error));
     });
 
-    // Function to add a user row to the table
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie) {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
     function addUserToTable(name, email, role) {
-        if (!tableBody) return;
         const newRow = document.createElement("tr");
         newRow.innerHTML = `
             <td class="user-name">${name}</td>
@@ -72,28 +70,20 @@ document.addEventListener("DOMContentLoaded", function () {
             </td>
         `;
         tableBody.appendChild(newRow);
-        
-        // Attach event listeners for Edit and Remove buttons
-        newRow.querySelector(".edit-user").addEventListener("click", function () {
-            editUser(newRow);
-        });
-        newRow.querySelector(".remove-user").addEventListener("click", function () {
-            removeUser(newRow);
-        });
+
+        newRow.querySelector(".edit-user").addEventListener("click", () => editUser(newRow));
+        newRow.querySelector(".remove-user").addEventListener("click", () => removeUser(newRow));
     }
-    
-    // Function to edit a user row
+
     function editUser(row) {
         const nameCell = row.querySelector(".user-name");
         const emailCell = row.querySelector(".user-email");
         const roleCell = row.querySelector(".user-role");
-        
-        // Get current values
+
         const currentName = nameCell.innerText;
         const currentEmail = emailCell.innerText;
         const currentRole = roleCell.innerText;
-        
-        // Replace cell contents with input fields
+
         nameCell.innerHTML = `<input type="text" class="form-control name-input" value="${currentName}">`;
         emailCell.innerHTML = `<input type="email" class="form-control email-input" value="${currentEmail}">`;
         roleCell.innerHTML = `
@@ -103,66 +93,53 @@ document.addEventListener("DOMContentLoaded", function () {
                 <option value="Employee" ${currentRole === "Employee" ? "selected" : ""}>Employee</option>
             </select>
         `;
-        
-        // Change Edit button to Save
-        const editButton = row.querySelector(".edit-user");
-        editButton.innerText = "Save";
-        editButton.classList.remove("btn-warning");
-        editButton.classList.add("btn-success");
-        
-        // Remove old event listener and add new one for saving
-        editButton.replaceWith(editButton.cloneNode(true));
-        row.querySelector(".edit-user").addEventListener("click", function () {
-            saveUser(row);
-        });
+
+        let oldButton = row.querySelector(".edit-user");
+        const newButton = oldButton.cloneNode(true);
+        newButton.innerText = "Save";
+        newButton.classList.remove("btn-warning");
+        newButton.classList.add("btn-success");
+        oldButton.parentNode.replaceChild(newButton, oldButton);
+
+        newButton.addEventListener("click", () => saveUser(row));
     }
-    
-    // Function to save the edited user row
+
     function saveUser(row) {
         const nameInput = row.querySelector(".name-input").value;
         const emailInput = row.querySelector(".email-input").value;
         const roleInput = row.querySelector(".role-input").value;
-        
-        // Update the table cells with the new values
+
         row.querySelector(".user-name").innerText = nameInput;
         row.querySelector(".user-email").innerText = emailInput;
         row.querySelector(".user-role").innerText = roleInput;
-        
-        // Change the Save button back to Edit
-        const saveButton = row.querySelector(".edit-user");
-        saveButton.innerText = "Edit";
-        saveButton.classList.remove("btn-success");
-        saveButton.classList.add("btn-warning");
-        
-        // Reset event listener to allow editing again
-        saveButton.replaceWith(saveButton.cloneNode(true));
-        row.querySelector(".edit-user").addEventListener("click", function () {
-            editUser(row);
-        });
-        
+
+        let saveButton = row.querySelector(".edit-user");
+        const newButton = saveButton.cloneNode(true);
+        newButton.innerText = "Edit";
+        newButton.classList.remove("btn-success");
+        newButton.classList.add("btn-warning");
+        saveButton.parentNode.replaceChild(newButton, saveButton);
+
+        newButton.addEventListener("click", () => editUser(row));
+
         alert("User updated successfully!");
     }
-    
-    // Function to remove a user row
+
     function removeUser(row) {
         if (confirm("Are you sure you want to delete this user?")) {
             row.remove();
         }
     }
-    
-    // Optional: Add a test user row (for demonstration purposes)
-    // Uncomment the next line if you want to see a test user added on page load.
-    // addUserToTable("Joana Villanova", "juju.villanova11@gmail.com", "Admin");
-});
 
-// Toggle password visibility
-document.getElementById("togglePassword").addEventListener("click", function () {
-    const passwordInput = document.getElementById("password");
-    if (passwordInput.type === "password") {
-        passwordInput.type = "text";
-        this.innerHTML = "🔒";
-    } else {
-        passwordInput.type = "password";
-        this.innerHTML = "👁️";
-    }
+    // Password toggle
+    document.getElementById("togglePassword").addEventListener("click", function () {
+        const passwordInput = document.getElementById("password");
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+            this.innerHTML = "🔒";
+        } else {
+            passwordInput.type = "password";
+            this.innerHTML = "👁️";
+        }
+    });
 });
