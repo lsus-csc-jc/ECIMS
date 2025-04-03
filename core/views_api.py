@@ -5,8 +5,8 @@ from rest_framework import viewsets
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Profile, InventoryItem, Supplier, Order, OrderItem, Report, Changelog
-from .serializers import ProfileSerializer, InventoryItemSerializer, SupplierSerializer, OrderSerializer, OrderItemSerializer, ReportSerializer, ChangelogSerializer
+from .models import Profile, InventoryItem, Supplier, Order, OrderItem, Report, Changelog, InventoryItemChanges
+from .serializers import ProfileSerializer, InventoryItemSerializer, SupplierSerializer, OrderSerializer, OrderItemSerializer, ReportSerializer, ChangelogSerializer, InventoryItemChangesSerializer
 
 def api_dashboard(request):
     data = {
@@ -50,6 +50,11 @@ class ChangelogViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = Changelog.objects.all()
     serializer_class = ChangelogSerializer
+
+class InventoryItemChangesViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    queryset = InventoryItemChanges.objects.all()
+    serializer_class = InventoryItemChangesSerializer
 
 class ReportViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]

@@ -1,6 +1,6 @@
 # core/serializers.py
 from rest_framework import serializers
-from .models import Profile, InventoryItem, Supplier, Order, OrderItem, Report, Changelog
+from .models import Profile, InventoryItem, Supplier, Order, OrderItem, Report, Changelog, InventoryItemChanges
 from django.contrib.auth.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -43,4 +43,9 @@ class ReportSerializer(serializers.ModelSerializer):
 class ChangelogSerializer(serializers.ModelSerializer):
     class Meta:
         model = Changelog
+        fields = '__all__'
+
+class InventoryItemChangesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InventoryItemChanges
         fields = '__all__'

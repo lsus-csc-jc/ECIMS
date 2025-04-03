@@ -179,3 +179,15 @@ class Changelog(models.Model):
     
     def __str__(self):
         return f"{self.record_id}: {self.model_name} change {self.field_name} from {self.old_value} to {self.new_value}"
+
+#Represents the inventory specific changelog
+class InventoryItemChanges(models.Model):
+    item = models.ForeignKey(InventoryItem, on_delete=models.PROTECT)
+    field_name = models.CharField(max_length=100)
+    old_value = models.CharField(max_length=255, null=True)
+    new_value = models.CharField(max_length=255, null=True)
+    executing_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, editable=False)
+    date_executed = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.item}: change {self.field_name} from {self.old_value} to {self.new_value}"
