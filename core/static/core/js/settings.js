@@ -108,22 +108,48 @@ document.addEventListener("DOMContentLoaded", function () {
         const nameInput = row.querySelector(".name-input").value;
         const emailInput = row.querySelector(".email-input").value;
         const roleInput = row.querySelector(".role-input").value;
-
-        row.querySelector(".user-name").innerText = nameInput;
-        row.querySelector(".user-email").innerText = emailInput;
-        row.querySelector(".user-role").innerText = roleInput;
-
-        let saveButton = row.querySelector(".edit-user");
-        const newButton = saveButton.cloneNode(true);
-        newButton.innerText = "Edit";
-        newButton.classList.remove("btn-success");
-        newButton.classList.add("btn-warning");
-        saveButton.parentNode.replaceChild(newButton, saveButton);
-
-        newButton.addEventListener("click", () => editUser(row));
-
-        alert("User updated successfully!");
+    
+        // Get the user ID (you can store it in a data attribute in the row)
+        const userId = row.dataset.userid;
+    
+        fetch(`/update-user/${userId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                username: nameInput,
+                email: emailInput,
+                role: roleInput
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                row.querySelector(".user-name").innerText = nameInput;
+                row.querySelector(".user-email").innerText = emailInput;
+                row.querySelector(".user-role").innerText = roleInput;
+    
+                const saveButton = row.querySelector(".edit-user");
+                const newButton = saveButton.cloneNode(true);
+                newButton.innerText = "Edit";
+                newButton.classList.remove("btn-success");
+                newButton.classList.add("btn-warning");
+                saveButton.parentNode.replaceChild(newButton, saveButton);
+                newButton.addEventListener("click", () => editUser(row));
+    
+                alert("User updated successfully!");
+            } else {
+                alert("Error updating user: " + data.error);
+            }
+        })
+        .catch(error => {
+            console.error("Update failed:", error);
+            alert("An error occurred while updating.");
+        });
     }
+    
 
     function removeUser(row) {
         if (confirm("Are you sure you want to delete this user?")) {

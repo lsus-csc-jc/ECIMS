@@ -7,10 +7,11 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
-
+from core.models import Profile
 import json
 import uuid
 
+from django.http import JsonResponse
 from .forms import SignUpForm  # Import the fixed signup form
 from .models import Order, Supplier, Profile
 from .decorators import role_required
@@ -49,29 +50,41 @@ def save_order(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+
             product = data.get('product')
             quantity = data.get('quantity')
             supplier_name = data.get('supplier')
             expected_delivery = data.get('expectedDelivery')
             form_status = data.get('status')
-            
+
             if not supplier_name:
                 return JsonResponse({'success': False, 'error': 'Supplier name is required.'}, status=400)
-            
-            status_mapping = {
-                'Pending': 'PENDING',
-                'Completed': 'COMPLETED',
-                'Returned': 'CANCELLED'
-            }
-            order_status = status_mapping.get(form_status, 'PENDING')
-            
+
+            # Validate incoming status
+            valid_statuses = ['PENDING', 'COMPLETED', 'CANCELLED']
+            order_status = form_status if form_status in valid_statuses else 'PENDING'
+
             supplier, created = Supplier.objects.get_or_create(
                 name=supplier_name,
                 defaults={'contact_email': 'unknown@example.com'}
             )
-            
+
+            # ✅ Prevent duplicate orders based on key fields
+            duplicate_order = Order.objects.filter(
+                product=product,
+                quantity=quantity,
+                supplier=supplier,
+                expected_delivery=expected_delivery,
+                status=order_status
+            ).first()
+
+            if duplicate_order:
+                return JsonResponse({'success': False, 'error': 'Duplicate order already exists.'}, status=409)
+
+            # Generate unique order number
             order_number = str(uuid.uuid4())[:8]
-            
+
+            # ✅ Create new order
             order = Order.objects.create(
                 order_number=order_number,
                 supplier=supplier,
@@ -80,12 +93,59 @@ def save_order(request):
                 quantity=quantity,
                 expected_delivery=expected_delivery
             )
-            
+
             return JsonResponse({'success': True, 'message': 'Order saved successfully'})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=500)
-    else:
-        return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+@csrf_exempt
+@require_POST
+def update_order_status(request, order_id):
+    print(f"🔍 Update order status called for order ID/Number: {order_id}")
+    try:
+        data = json.loads(request.body)
+        new_status = data.get("status")
+        print(f"🔍 New status received: {new_status}")
+        
+        # Validate status
+        if new_status not in [status[0] for status in Order.ORDER_STATUS]:
+            print(f"❌ Invalid status: {new_status}")
+            return JsonResponse({"success": False, "error": "Invalid status value"}, status=400)
+            
+        # Try to get order by ID first, if that fails try by order_number
+        try:
+            # Try to convert order_id to integer for primary key lookup
+            order_pk = int(order_id)
+            order = Order.objects.get(pk=order_pk)
+        except (ValueError, Order.DoesNotExist):
+            # If conversion fails or no order found, try looking up by order_number
+            print(f"🔍 Looking up order by order_number: {order_id}")
+            order = Order.objects.get(order_number=order_id)
+            
+        print(f"✅ Order found: {order}")
+        
+        # Update the status
+        order.status = new_status
+        order.save()
+        print(f"✅ Status updated to: {new_status}")
+        
+        return JsonResponse({
+            "success": True,
+            "order_id": order.id,
+            "order_number": order.order_number,
+            "new_status": new_status
+        })
+    except Order.DoesNotExist:
+        print(f"❌ Order not found with ID/Number: {order_id}")
+        return JsonResponse({"success": False, "error": "Order not found"}, status=404)
+    except json.JSONDecodeError:
+        print(f"❌ Invalid JSON in request body")
+        return JsonResponse({"success": False, "error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        print(f"❌ Error updating order status: {str(e)}")
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 @csrf_exempt
 @require_POST
@@ -164,6 +224,26 @@ def edit_user(request, user_id):
     return render(request, 'edit_user.html', {'user_to_edit': user_to_edit})
 
 
+@csrf_exempt
+def update_user(request, user_id):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            user = User.objects.get(id=user_id)
+            user.username = data.get('username', user.username)
+            user.email = data.get('email', user.email)
+            user.save()
+
+            # Update role in profile
+            profile = user.profile
+            profile.role = data.get('role', profile.role)
+            profile.save()
+
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
 @role_required(['Manager', 'Employee'])
 def view_inventory(request):
     # Logic to display inventory (implement your logic as needed)
@@ -186,8 +266,29 @@ def delete_inventory_item(request, item_id):
 def settings_view(request):
     if not request.user.is_superuser:
         return HttpResponseForbidden("Access Denied")
+
     users = User.objects.all().select_related("profile")
-    return render(request, 'settings.html', {'users': users})
+
+    # Ensure profile exists for superuser
+    profile, created = Profile.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST':
+        profile.phone = request.POST.get('phone', profile.phone)
+        profile.website = request.POST.get('website', profile.website)
+        profile.street = request.POST.get('street', profile.street)
+        profile.city = request.POST.get('city', profile.city)
+        profile.state = request.POST.get('state', profile.state)
+        profile.zip_code = request.POST.get('zip_code', profile.zip_code)
+        profile.timezone = request.POST.get('timezone', profile.timezone)
+        profile.save()
+        return redirect('settings')
+
+    return render(request, 'settings.html', {
+        'users': users,
+        'user': request.user,
+        'profile': profile,
+    })
+
 
 @login_required
 def dashboard_view(request):

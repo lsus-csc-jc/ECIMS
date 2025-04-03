@@ -7,13 +7,21 @@ User = get_user_model()
 # Profile for each user
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    # Add a default value to the role field to avoid NOT NULL constraint errors
     role = models.CharField(max_length=50, default="Employee")
     bio = models.TextField(blank=True, null=True)
-    # Add any other fields you have...
+
+    # New optional fields for profile tab:
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    website = models.URLField(blank=True, null=True)
+    street = models.CharField(max_length=100, blank=True, null=True)
+    city = models.CharField(max_length=50, blank=True, null=True)
+    state = models.CharField(max_length=50, blank=True, null=True)
+    zip_code = models.CharField(max_length=10, blank=True, null=True)
+    timezone = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
         return self.user.username
+
 
 # Supplier model
 class Supplier(models.Model):
