@@ -3,8 +3,21 @@ $(document).ready(function () {
 
     const apiUrl = "/api/v1/items/";
     const tableBody = $("#tableBody");
+    const productStatusMap = new Map();
+    let modalActive = false;
+    let lowStockQueue = [];
 
-    async function fetchInventoryData() {
+    function getViewedLowStockIds() {
+        return new Set(JSON.parse(localStorage.getItem("viewedLowStockIds") || "[]"));
+    }
+
+    function markAsViewed(productId) {
+        const viewed = getViewedLowStockIds();
+        viewed.add(productId.toString());
+        localStorage.setItem("viewedLowStockIds", JSON.stringify(Array.from(viewed)));
+    }
+
+    async function fetchInventoryData(showAlert = false) {
         console.log("🔄 Fetching inventory data...");
 
         try {
@@ -14,7 +27,9 @@ $(document).ready(function () {
             const data = await response.json();
             console.log("✅ API Data Received:", data);
 
-            updateTable(data); 
+            const oldStatuses = new Map(productStatusMap);
+            updateTable(data);
+            if (showAlert) checkAndQueueLowStock(data, oldStatuses);
         } catch (error) {
             console.error("❌ Error fetching inventory data:", error);
         }
@@ -22,7 +37,7 @@ $(document).ready(function () {
 
     function updateTable(data) {
         console.log("🔄 Updating table with fetched data...");
-        tableBody.empty(); 
+        tableBody.empty();
 
         if (data.length === 0) {
             console.warn("⚠️ No inventory items found!");
@@ -31,6 +46,7 @@ $(document).ready(function () {
         }
 
         data.forEach(item => {
+            let statusBadge;
             switch (item.status) {
                 case 3:
                     statusBadge = `<span class="badge bg-success">In-Stock</span>`;
@@ -47,7 +63,7 @@ $(document).ready(function () {
 
             let row = `
                 <tr data-id="${item.id}">
-                    <td>${item.name}</td> 
+                    <td>${item.name}</td>
                     <td>${item.quantity}</td>
                     <td>${item.threshold}</td>
                     <td>${statusBadge}</td>
@@ -57,12 +73,68 @@ $(document).ready(function () {
                     </td>
                 </tr>`;
             tableBody.append(row);
+
+            productStatusMap.set(item.id, item.status);
         });
 
         console.log("✅ Table Updated Successfully!");
     }
 
-    // ✅ Search Functionality
+    function checkAndQueueLowStock(data, oldStatuses) {
+        const viewed = getViewedLowStockIds();
+
+        data.forEach(product => {
+            const prevStatus = oldStatuses.get(product.id);
+            const isNowLowStock = product.status === 2 || product.status === 1;
+            const wasLowStock = prevStatus === 2 || prevStatus === 1;
+
+            const statusChanged = prevStatus !== product.status;
+            const wentFromHighToLow = (prevStatus === 3 || prevStatus === undefined) && isNowLowStock;
+
+            if (statusChanged && isNowLowStock && viewed.has(product.id.toString())) {
+                viewed.delete(product.id.toString());
+                localStorage.setItem("viewedLowStockIds", JSON.stringify(Array.from(viewed)));
+            }
+
+            if (isNowLowStock && !viewed.has(product.id.toString()) && (statusChanged || wentFromHighToLow) && !lowStockQueue.some(p => p.id === product.id)) {
+                lowStockQueue.push(product);
+            }
+
+            productStatusMap.set(product.id, product.status);
+        });
+
+        if (!modalActive) showNextAlert();
+    }
+
+    function showNextAlert() {
+        if (lowStockQueue.length === 0) {
+            modalActive = false;
+            return;
+        }
+
+        modalActive = true;
+        const product = lowStockQueue.shift();
+
+        const content = `
+            <strong>${product.name}</strong><br>
+            Quantity: ${product.quantity}<br>
+            Threshold: ${product.threshold}<br>
+            <small>Status: ${product.status === 1 ? "Out of Stock" : "Low Stock"}</small>
+        `;
+        $("#notificationContent").html(content);
+        const modal = new bootstrap.Modal(document.getElementById("notificationModal"));
+        modal.show();
+
+        $("#markViewedBtn").off("click").on("click", function () {
+            markAsViewed(product.id);
+            modal.hide();
+            setTimeout(() => {
+                modalActive = false;
+                showNextAlert();
+            }, 500);
+        });
+    }
+
     $("#searchInput").on("keyup", function () {
         let value = $(this).val().toLowerCase();
         $("#tableBody tr").each(function () {
@@ -71,7 +143,6 @@ $(document).ready(function () {
         });
     });
 
-    // ✅ Handle Add New Product
     $("#addEntry").click(async function () {
         let productName = $("#addProduct").val().trim();
         let productQuantity = parseInt($("#addQuantity").val());
@@ -93,14 +164,14 @@ $(document).ready(function () {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRFToken": getCSRFToken() 
+                    "X-CSRFToken": getCSRFToken()
                 },
                 body: JSON.stringify(newProduct)
             });
 
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
-            fetchInventoryData();
+            await fetchInventoryData(true);
             $("#addModal").modal("hide");
             $("#addForm")[0].reset();
             console.log("✅ Product Added Successfully!");
@@ -110,7 +181,6 @@ $(document).ready(function () {
         }
     });
 
-    // ✅ Handle Edit Product (Event Delegation)
     $(document).on("click", ".edit-btn", function () {
         let row = $(this).closest("tr");
         let productId = row.data("id");
@@ -126,7 +196,6 @@ $(document).ready(function () {
         $("#editModal").modal("show");
     });
 
-    // ✅ Handle Save Changes after Editing
     $("#saveChanges").click(async function () {
         let productId = $("#editRowIndex").val();
         let updatedName = $("#editProduct").val().trim();
@@ -149,14 +218,14 @@ $(document).ready(function () {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRFToken": getCSRFToken() 
+                    "X-CSRFToken": getCSRFToken()
                 },
                 body: JSON.stringify(updatedProduct)
             });
 
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
-            fetchInventoryData();
+            await fetchInventoryData(true);
             $("#editModal").modal("hide");
             console.log("✅ Product Updated Successfully!");
         } catch (error) {
@@ -165,7 +234,6 @@ $(document).ready(function () {
         }
     });
 
-    // ✅ Handle Delete Product (Event Delegation)
     $(document).on("click", ".delete-btn", async function () {
         let row = $(this).closest("tr");
         let productId = row.data("id");
@@ -182,7 +250,7 @@ $(document).ready(function () {
 
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
-            fetchInventoryData();
+            await fetchInventoryData(true);
             console.log("✅ Product Deleted Successfully!");
         } catch (error) {
             console.error("❌ Error deleting product:", error);
@@ -190,7 +258,6 @@ $(document).ready(function () {
         }
     });
 
-    // ✅ Function to Get CSRF Token (Required for Django)
     function getCSRFToken() {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -206,6 +273,6 @@ $(document).ready(function () {
         return cookieValue;
     }
 
-    // ✅ Load inventory data on page load
-    fetchInventoryData();
+    fetchInventoryData(true);
+    setInterval(() => fetchInventoryData(true), 15000);
 });

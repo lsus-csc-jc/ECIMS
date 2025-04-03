@@ -7,15 +7,18 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Profile, InventoryItem, Supplier, Order, OrderItem, Report, Changelog, InventoryItemChanges
 from .serializers import ProfileSerializer, InventoryItemSerializer, SupplierSerializer, OrderSerializer, OrderItemSerializer, ReportSerializer, ChangelogSerializer, InventoryItemChangesSerializer
+from django.db.models import F
+
 
 def api_dashboard(request):
     data = {
         'totalProducts': InventoryItem.objects.count(),
-        'totalAlerts': 0,
-        'pendingOrders':0,
-        'status': 200
+        'totalAlerts': InventoryItem.objects.filter(status=InventoryItem.LOWSTOCK).count(),
+        'pendingOrders': Order.objects.filter(status='PENDING').count(),
+            'status': 200
     }
     return JsonResponse(data)
+
     #return HttpResponse("Hello world!")
 
 class ProfileListCreateAPIView(generics.ListCreateAPIView):

@@ -1,5 +1,3 @@
-# core/models.py
-
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.conf import settings
@@ -10,6 +8,8 @@ User = get_user_model()
 # Profile for each user
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    # Add a default value to the role field to avoid NOT NULL constraint errors
+    role = models.CharField(max_length=50, default="Employee")
     bio = models.TextField(blank=True, null=True)
     # Add any other fields you have...
 
@@ -63,15 +63,15 @@ class InventoryItem(models.Model):
     quantity = models.PositiveIntegerField(default=0)
     threshold = models.PositiveIntegerField(default=0)
     #supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='inventory_items')
-    status = models.PositiveSmallIntegerField(choices=INV_STATUS_CHOICES,default=UNKNOWN)
+    status = models.PositiveSmallIntegerField(choices=INV_STATUS_CHOICES, default=UNKNOWN)
     date_modified = models.DateTimeField(auto_now=True)
     date_added = models.DateTimeField(auto_now_add=True)
 
     def calculate_inv_status(self):
-        if (self.threshold > 0):
+        if self.threshold > 0:
             if self.quantity == 0:
                 return self.OUTOFSTOCK
-            if (self.quantity <= self.threshold):
+            if self.quantity <= self.threshold:
                 return self.LOWSTOCK
             else:
                 return self.INSTOCK
@@ -103,19 +103,21 @@ class InventoryItem(models.Model):
 
 # Order model
 class Order(models.Model):
-    ORDER_STATUS = [
+    ORDER_STATUS = (
         ('PENDING', 'Pending'),
         ('COMPLETED', 'Completed'),
         ('CANCELLED', 'Cancelled'),
-    ]
-
+    )
     order_number = models.CharField(max_length=100, unique=True)
     date_ordered = models.DateTimeField(auto_now_add=True)
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='orders')
     status = models.CharField(max_length=20, choices=ORDER_STATUS, default='PENDING')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    # New fields added:
+    product = models.CharField(max_length=255, blank=True, null=True)
+    quantity = models.PositiveIntegerField(blank=True, null=True)
+    expected_delivery = models.DateField(blank=True, null=True)
     date_modified = models.DateTimeField(auto_now=True)
-    # If needed, you can later add fields like total price, etc.
 
     def __str__(self):
         return self.order_number
@@ -130,7 +132,7 @@ class OrderItem(models.Model):
     def __str__(self):
         return f"{self.quantity} x {self.inventory_item.name} in order {self.order.order_number}"
 
-#Manage orders placed to suppliers
+# Manage orders placed to suppliers
 class PurchaseOrder(models.Model):
     order_number = models.CharField(max_length=50, unique=True)
     supplier = models.ForeignKey(Supplier, on_delete=models.PROTECT)
@@ -138,13 +140,13 @@ class PurchaseOrder(models.Model):
     total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     received = models.BooleanField(default=False)
     date_modified = models.DateTimeField(auto_now=True)
-    #does this data point need to be tracked twice?
+    # Does this data point need to be tracked twice?
     date_added = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
         return f"Purchase Order #{self.id} to {self.supplier.name}"
     
-#Items in a purchase order
+# Items in a purchase order
 class PurchaseOrderItem(models.Model):
     purchase_order = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name="order_items")
     item = models.ForeignKey(InventoryItem, on_delete=models.PROTECT)
@@ -156,7 +158,7 @@ class PurchaseOrderItem(models.Model):
     def __str__(self):
         return f"{self.quantity} x {self.item.name} in PO #{self.purchase_order.id}"
     
-#Represents reports
+# Represents reports
 class Report(models.Model):
     name = models.CharField(max_length=100)
     query = models.CharField(max_length=100)
