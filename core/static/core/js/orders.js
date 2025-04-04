@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log("Test button not found!");
     }
 
-
+/*
     button.addEventListener("click", function(event) {
         console.log("Update Order button clicked"); // Check if this appears
         event.preventDefault();
@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const newStatus = statusSelect.value;
         console.log("New status:", newStatus);
         // ... rest of the fetch call ...
-    });
+    });*/
     
     // Update Order Status Buttons
     const updateButtons = document.querySelectorAll(".update-order-btn");
@@ -109,7 +109,7 @@ document.addEventListener("DOMContentLoaded", function() {
             };
 
             // Make the AJAX call to update order status
-            fetch(`/update-order/${orderId}/`, {
+            fetch(`/update_order/${orderId}/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
