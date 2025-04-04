@@ -1,3 +1,5 @@
+console.log("orders.js is loaded");
+
 // Helper function for CSRF token
 function getCookie(name) {
     let cookieValue = null;
@@ -23,16 +25,16 @@ function filterOrders() {
     const rows = document.querySelectorAll("tbody tr");
 
     rows.forEach(row => {
-        // Assuming table columns: 0: product, 1: quantity, 2: order_number, 3: expected_delivery, 4: status
-        const product = row.cells[0].innerText.toLowerCase();
-        const orderId = row.cells[2].innerText.toLowerCase();
-        const status = row.cells[4].innerText.trim().toLowerCase();
+        // Assuming table columns: 0: Order Number, 1: Supplier, 2: Date Ordered, 3: Expected Delivery, 4: Status (and button container)
+        const orderNumber = row.cells[0].innerText.toLowerCase();
+        const supplier = row.cells[1].innerText.toLowerCase();
+        const statusText = row.cells[4].innerText.trim().toLowerCase();
         const dateText = row.cells[3].innerText.trim();  // format "m/d/Y" or "N/A"
 
-        // Check search match (by product or order id)
-        const matchesSearch = product.includes(searchQuery) || orderId.includes(searchQuery);
+        // Check search match (by order number or supplier)
+        const matchesSearch = orderNumber.includes(searchQuery) || supplier.includes(searchQuery);
         // Check status match (case-insensitive)
-        const matchesStatus = (statusFilter === "" || status === statusFilter);
+        const matchesStatus = (statusFilter === "" || statusText.includes(statusFilter));
         // Check date range match if dates provided and date is valid (not "N/A")
         let matchesDate = true;
         if (startDate && endDate && dateText !== "N/A") {
@@ -66,52 +68,65 @@ function confirmCloseModal() {
 
 // Attach event listeners once the DOM is ready
 document.addEventListener("DOMContentLoaded", function() {
-    const orderForm = document.getElementById("orderForm");
-    if (!orderForm) return;
-    
-    orderForm.addEventListener("submit", function(event) {
+    // Test button for verifying JS functionality
+    const testButton = document.getElementById("testUpdateButton");
+    if (testButton) {
+        testButton.addEventListener("click", function() {
+            console.log("Test Update Order button clicked");
+        });
+    } else {
+        console.log("Test button not found!");
+    }
+
+
+    button.addEventListener("click", function(event) {
+        console.log("Update Order button clicked"); // Check if this appears
         event.preventDefault();
+        const orderId = this.dataset.orderId;
+        console.log("Order ID:", orderId);
+        const row = this.closest("tr");
+        const statusSelect = row.querySelector("select[name='status']");
+        const newStatus = statusSelect.value;
+        console.log("New status:", newStatus);
+        // ... rest of the fetch call ...
+    });
+    
+    // Update Order Status Buttons
+    const updateButtons = document.querySelectorAll(".update-order-btn");
+    updateButtons.forEach(button => {
+        button.addEventListener("click", function(event) {
+            console.log("Update Order button clicked"); // Debug log
+            event.preventDefault();
+            const orderId = this.dataset.orderId;
+            // Find the select element in the same row
+            const row = this.closest("tr");
+            const statusSelect = row.querySelector("select[name='status']");
+            const newStatus = statusSelect.value;
 
-        const product = document.getElementById("product").value;
-        const quantity = document.getElementById("quantity").value;
-        const supplier = document.getElementById("supplier").value;
-        const expectedDelivery = document.getElementById("expectedDelivery").value;
-        const status = document.getElementById("status").value;
+            // Prepare the payload for update
+            const payload = {
+                status: newStatus
+            };
 
-        const orderData = {
-            product: product,
-            quantity: quantity,
-            supplier: supplier,
-            expectedDelivery: expectedDelivery,
-            status: status
-        };
-
-        fetch('/save_order/', { 
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify(orderData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log("Response:", data);
-            if (data.success) {
-                alert("Order successfully added!");
-                location.reload();
-            } else {
-                alert("Failed to add order: " + data.error);
-            }
-        })
-        .catch(error => console.error("Error:", error));
-
-        // Close the modal after submission
-        const modalElement = document.getElementById("newOrderModal");
-        let modal = bootstrap.Modal.getInstance(modalElement);
-        if (!modal) {
-            modal = new bootstrap.Modal(modalElement);
-        }
-        modal.hide();
+            // Make the AJAX call to update order status
+            fetch(`/update-order/${orderId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Update Response:", data);
+                if (data.success) {
+                    alert("Order status updated successfully!");
+                } else {
+                    alert("Failed to update order: " + data.error);
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        });
     });
 });

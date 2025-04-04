@@ -100,52 +100,21 @@ def save_order(request):
 
     return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
 
+
+
 @csrf_exempt
-@require_POST
-def update_order_status(request, order_id):
-    print(f"🔍 Update order status called for order ID/Number: {order_id}")
-    try:
-        data = json.loads(request.body)
-        new_status = data.get("status")
-        print(f"🔍 New status received: {new_status}")
-        
-        # Validate status
-        if new_status not in [status[0] for status in Order.ORDER_STATUS]:
-            print(f"❌ Invalid status: {new_status}")
-            return JsonResponse({"success": False, "error": "Invalid status value"}, status=400)
-            
-        # Try to get order by ID first, if that fails try by order_number
+def update_order(request, order_id):
+    if request.method == 'POST':
         try:
-            # Try to convert order_id to integer for primary key lookup
-            order_pk = int(order_id)
-            order = Order.objects.get(pk=order_pk)
-        except (ValueError, Order.DoesNotExist):
-            # If conversion fails or no order found, try looking up by order_number
-            print(f"🔍 Looking up order by order_number: {order_id}")
-            order = Order.objects.get(order_number=order_id)
-            
-        print(f"✅ Order found: {order}")
-        
-        # Update the status
-        order.status = new_status
-        order.save()
-        print(f"✅ Status updated to: {new_status}")
-        
-        return JsonResponse({
-            "success": True,
-            "order_id": order.id,
-            "order_number": order.order_number,
-            "new_status": new_status
-        })
-    except Order.DoesNotExist:
-        print(f"❌ Order not found with ID/Number: {order_id}")
-        return JsonResponse({"success": False, "error": "Order not found"}, status=404)
-    except json.JSONDecodeError:
-        print(f"❌ Invalid JSON in request body")
-        return JsonResponse({"success": False, "error": "Invalid JSON data"}, status=400)
-    except Exception as e:
-        print(f"❌ Error updating order status: {str(e)}")
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
+            data = json.loads(request.body.decode('utf-8'))
+            order = Order.objects.get(id=order_id)
+            order.status = data.get('status', order.status)
+            order.save()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
 
 @csrf_exempt
 @require_POST
@@ -222,6 +191,8 @@ def edit_user(request, user_id):
 
     # If GET request, render a form pre-filled with user info
     return render(request, 'edit_user.html', {'user_to_edit': user_to_edit})
+
+
 
 
 @csrf_exempt

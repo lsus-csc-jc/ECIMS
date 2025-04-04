@@ -222,49 +222,58 @@
                                 </div>
                             </div>
     
-                            <!-- Table Section -->
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Order ID</th>
-                                            <th>Supplier</th>
-                                            <th>Date Created</th>
-                                            <th>Delivery Date</th>
-                                            <th>Status</th>
-                                            <th></th> <!-- Plus sign column -->
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for order in orders %}
-                                        <tr>
-                                            <td>{{ order.order_number }}</td>
-                                            <td>{{ order.supplier.name }}</td>
-                                            <td>{{ order.date_ordered|date:"m/d/Y" }}</td>
-                                            <td>
-                                                {% if order.expected_delivery %}
-                                                    {{ order.expected_delivery|date:"m/d/Y" }}
-                                                {% else %}
-                                                    N/A
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                <select class="form-select">
-                                                    <option value="Pending" {% if order.status == "PENDING" %}selected{% endif %}>Pending</option>
-                                                    <option value="Delivered" {% if order.status == "COMPLETED" %}selected{% endif %}>Delivered</option>
-                                                    <option value="Returned" {% if order.status == "CANCELLED" %}selected{% endif %}>Returned</option>
-                                                </select>
-                                            </td>
-                                            <td><button class="btn btn-primary">+</button></td>
-                                        </tr>
-                                        {% empty %}
-                                        <tr>
-                                            <td colspan="6">No orders found.</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
+                   <!-- Table Section -->
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Supplier</th>
+                <th>Date Created</th>
+                <th>Delivery Date</th>
+                <th>Status</th>
+                <th></th> <!-- Plus sign column -->
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>{{ order.order_number }}</td>
+                <td>{{ order.supplier.name }}</td>
+                <td>{{ order.date_ordered|date:"m/d/Y" }}</td>
+                <td>
+                    {% if order.expected_delivery %}
+                        {{ order.expected_delivery|date:"m/d/Y" }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td>
+                    <select name="status" class="form-select">
+                        <option value="PENDING" {% if order.status == "PENDING" %}selected{% endif %}>Pending</option>
+                        <option value="COMPLETED" {% if order.status == "COMPLETED" %}selected{% endif %}>Completed</option>
+                        <option value="CANCELLED" {% if order.status == "CANCELLED" %}selected{% endif %}>Cancelled</option>
+                    </select>
+                    <button type="button" id="updateOrderBtn-{{ order.id }}" class="btn btn-success update-order-btn" data-order-id="{{ order.id }}">Update Order</button>
+
+
+                </td>
+                <td>
+                    <button class="btn btn-primary">+</button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">No orders found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+ 
+
+</div>
+
+
                         </div>
                     </main>
                 </div>
@@ -301,9 +310,11 @@
                         <div class="mb-3">
                             <label for="status" class="form-label">Status</label>
                             <select class="form-control" id="status">
-                                <option value="Pending">Pending</option>
-                                <option value="Delivered">Delivered</option>
-                                <option value="Returned">Returned</option>
+                                <option value="PENDING">Pending</option>
+                                <option value="COMPLETED">Delivered</option>
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                            
                             </select>
                         </div>
                         <button type="submit" class="btn btn-success">Add Order</button>
@@ -322,116 +333,6 @@
     <script src="{% static 'core/js/navigation.js' %}"></script>
     <script src="{% static 'core/js/orders.js' %}"></script>
     
-    <!-- Add Order Form Submission Script with CSRF token -->
-    <script>
-      // Function to get CSRF token from cookie
-      function getCookie(name) {
-          let cookieValue = null;
-          if (document.cookie && document.cookie !== "") {
-              const cookies = document.cookie.split(";");
-              for (let i = 0; i < cookies.length; i++) {
-                  const cookie = cookies[i].trim();
-                  if (cookie.substring(0, name.length + 1) === (name + "=")) {
-                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                      break;
-                  }
-              }
-          }
-          return cookieValue;
-      }
-      const csrftoken = getCookie("csrftoken");
-    
-      document.getElementById("orderForm").addEventListener("submit", function(event) {
-          event.preventDefault();
-      
-          let product = document.getElementById("product").value;
-          let quantity = document.getElementById("quantity").value;
-          let supplier = document.getElementById("supplier").value;
-          let expectedDelivery = document.getElementById("expectedDelivery").value;
-          let status = document.getElementById("status").value;
-      
-          let orderData = {
-              product: product,
-              quantity: quantity,
-              supplier: supplier,
-              expectedDelivery: expectedDelivery,
-              status: status
-          };
-      
-          // Use Django endpoint with URL tag and include CSRF token in headers
-          fetch("{% url 'save_order' %}", {
-              method: "POST",
-              headers: {
-                  "Content-Type": "application/json",
-                  "X-CSRFToken": csrftoken
-              },
-              body: JSON.stringify(orderData)
-          })
-          .then(response => response.json())
-          .then(data => {
-              if (data.success) {
-                  alert("Order successfully added!");
-                  location.reload();
-              } else {
-                  alert("Failed to add order. Please try again.");
-              }
-          })
-          .catch(error => console.error("Error:", error));
-      
-          // Close the modal
-          let modal = new bootstrap.Modal(document.getElementById("newOrderModal"));
-          modal.hide();
-      });
-    </script>
-    
-    <!-- Confirm Close Modal -->
-    <script>
-      function confirmCloseModal() {
-          let confirmClose = confirm("Are you sure you want to close without saving?");
-          if (confirmClose) {
-              let modal = bootstrap.Modal.getInstance(document.getElementById("newOrderModal"));
-              modal.hide();
-              window.location.href = "orders.html";
-          }
-      }
-    </script>
-    
-    <!-- Filter Orders Script -->
-    <script>
-      function filterOrders() {
-          let searchQuery = document.getElementById("searchInput").value.toLowerCase();
-          let statusFilter = document.getElementById("statusFilter").value;
-          let startDate = document.getElementById("startDate").value;
-          let endDate = document.getElementById("endDate").value;
-      
-          let rows = document.querySelectorAll("tbody tr");
-      
-          rows.forEach(row => {
-              let orderId = row.cells[0].innerText.toLowerCase();
-              let supplier = row.cells[1].innerText.toLowerCase();
-              let dateCreated = row.cells[2].innerText; 
-              let deliveryDate = row.cells[3].innerText; 
-              let statusCell = row.cells[4].querySelector("select") 
-                               ? row.cells[4].querySelector("select").value 
-                               : row.cells[4].innerText.trim();
-      
-              let matchesSearch = orderId.includes(searchQuery) || supplier.includes(searchQuery);
-              let matchesStatus = (statusFilter === "") || (statusCell === statusFilter);
-      
-              let matchesDateRange = true;
-              if (startDate && endDate) {
-                  let parsedDeliveryDate = new Date(deliveryDate.split("/").reverse().join("-")); 
-                  let start = new Date(startDate);
-                  let end = new Date(endDate);
-                  matchesDateRange = parsedDeliveryDate >= start && parsedDeliveryDate <= end;
-              }
-      
-              row.style.display = (matchesSearch && matchesStatus && matchesDateRange) 
-                                  ? "" 
-                                  : "none";
-          });
-      }
-    </script>
-    
+   
 </body>
 </html>
