@@ -21,13 +21,28 @@ document.addEventListener("DOMContentLoaded", function () {
         changeLogTableBody.innerHTML = '';
 
         data.forEach(entry => {
+            let statusBadge;
+            switch (entry.status) {
+                case 3:
+                    statusBadge = `<span class="badge bg-success">In-Stock</span>`;
+                    break;
+                case 2:
+                    statusBadge = `<span class="badge bg-warning text-dark">Low-Stock</span>`;
+                    break;
+                case 1:
+                    statusBadge = `<span class="badge bg-danger">Out-of-Stock</span>`;
+                    break;
+                default:
+                    statusBadge = `<span class="badge bg-warning text-dark">Unknown</span>`;
+            }
+
             const row = document.createElement("tr");
             row.innerHTML = `
                 <td>${entry.date_executed}</td>
-                <td>${entry.executing_user}</td>
-                <td>Updated ${entry.model_name} ${entry.field_name}</td>
-                <td>${entry.old_value} -> ${entry.new_value}</td>
-                <td>none</td>
+                <td>${entry.employee_name}</td>
+                <td>Updated quantity</td>
+                <td>${entry.item_name} ${entry.old_value} -> ${entry.new_value}</td>
+                <td>${statusBadge}</td>
             `;
             changeLogTableBody.appendChild(row);
         });

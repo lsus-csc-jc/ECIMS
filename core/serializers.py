@@ -49,3 +49,15 @@ class InventoryItemChangesSerializer(serializers.ModelSerializer):
     class Meta:
         model = InventoryItemChanges
         fields = '__all__'
+    
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['item_name'] = instance.item.name
+        if instance.executing_user:
+            if instance.executing_user.first_name and instance.executing_user.last_name:
+                data['employee_name'] = instance.executing_user.first_name + " " + instance.executing_user.last_name
+            else:
+                data['employee_name'] = instance.executing_user.email
+        else:
+            data['employee_name'] = 'not available'
+        return data

@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.conf import settings
 #from django.contrib.auth.models import User
+from django_currentuser.middleware import (get_current_user, get_current_authenticated_user)
 
 User = get_user_model()
 
@@ -78,7 +79,7 @@ class InventoryItem(models.Model):
         else:
             return self.UNKNOWN
         
-    def save(self, *args, **kwargs):
+    """ def save(self, *args, **kwargs):
         self.status = self.calculate_inv_status()
         if self.pk is not None:
             original = InventoryItem.objects.get(pk=self.pk)
@@ -92,6 +93,21 @@ class InventoryItem(models.Model):
                         field_name=field.name,
                         old_value=getattr(original,field.name),
                         new_value=getattr(self,field.name),
+                )
+        super().save(*args,**kwargs) """
+
+    def save(self, *args, **kwargs):
+        self.status = self.calculate_inv_status()
+        if self.pk is not None:
+            original = InventoryItem.objects.get(pk=self.pk)
+            #fields = InventoryItem._meta.concrete_fields
+            #changedfields = []
+            if getattr(original,'quantity') != getattr(self,'quantity'):
+                InventoryItemChanges.objects.create(
+                    item=self,
+                    old_value=getattr(original,'quantity'),
+                    new_value=getattr(self,'quantity'),
+                    status=getattr(self,'status'),
                 )
         super().save(*args,**kwargs)
 
@@ -184,12 +200,29 @@ class Changelog(models.Model):
 
 #Represents the inventory specific changelog
 class InventoryItemChanges(models.Model):
+    INSTOCK = 3
+    LOWSTOCK = 2
+    OUTOFSTOCK = 1
+    UNKNOWN = 0
+    INV_STATUS_CHOICES = {
+        INSTOCK: "In Stock",
+        LOWSTOCK: "Low Stock",
+        OUTOFSTOCK: "Out of Stock",
+        UNKNOWN: "Unknown"
+    }
     item = models.ForeignKey(InventoryItem, on_delete=models.PROTECT)
-    field_name = models.CharField(max_length=100)
     old_value = models.CharField(max_length=255, null=True)
     new_value = models.CharField(max_length=255, null=True)
-    executing_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, editable=False)
+    status = models.PositiveSmallIntegerField(choices=INV_STATUS_CHOICES, default=UNKNOWN)
+    executing_user = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True, editable=False)
     date_executed = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
-        return f"{self.item}: change {self.field_name} from {self.old_value} to {self.new_value}"
+        return f"{self.item}: change quantity from {self.old_value} to {self.new_value}. status: {self.get_status_display()}"
+
+    def save(self, *args, **kwargs):
+        self.executing_user = get_current_user()
+        super().save(*args,**kwargs)
+    
+    class Meta:
+        ordering = ['-date_executed']
