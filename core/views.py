@@ -10,11 +10,12 @@ from django.views.decorators.csrf import csrf_exempt
 from core.models import Profile
 import json
 import uuid
-
+from .decorators import allowed_roles
+from .roles import ROLE_SETTINGS_ACCESS, ROLE_INVENTORY_ACCESS, ROLE_ORDERS_ACCESS
 from django.http import JsonResponse
 from .forms import SignUpForm  # Import the fixed signup form
 from .models import Order, Supplier, Profile, InventoryItem
-from .decorators import role_required
+
 
 User = get_user_model()
 
@@ -230,12 +231,13 @@ def update_user(request, user_id):
             return JsonResponse({'success': False, 'error': str(e)})
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
-@role_required(['Manager', 'Employee'])
+@allowed_roles(roles=['Manager', 'Employee'])
 def view_inventory(request):
     # Logic to display inventory (implement your logic as needed)
     return render(request, 'inventory.html')
 
-@role_required(['Employee'])
+
+@allowed_roles(roles=['Employee'])
 def add_inventory_item(request):
     # Logic to add an inventory item
     if request.method == 'POST':
@@ -243,11 +245,13 @@ def add_inventory_item(request):
         pass
     return render(request, 'add_inventory.html')
 
-@role_required(['Manager'])
+
+@allowed_roles(roles=['Manager'])
 def delete_inventory_item(request, item_id):
     # Logic to delete an inventory item (implement deletion logic here)
     pass
 
+@allowed_roles(roles=ROLE_SETTINGS_ACCESS)
 @login_required
 def settings_view(request):
     if not request.user.is_superuser:
