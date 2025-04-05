@@ -13,7 +13,7 @@ import uuid
 
 from django.http import JsonResponse
 from .forms import SignUpForm  # Import the fixed signup form
-from .models import Order, Supplier, Profile
+from .models import Order, Supplier, Profile, InventoryItem
 from .decorators import role_required
 
 User = get_user_model()
@@ -106,16 +106,31 @@ def save_order(request):
 def update_order(request, order_id):
     if request.method == 'POST':
         try:
-            data = json.loads(request.body.decode('utf-8'))
+            data = json.loads(request.body)
+            new_status = data.get('status')
             order = Order.objects.get(id=order_id)
-            order.status = data.get('status', order.status)
-            order.save()
-            return JsonResponse({'success': True})
+        except Order.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Order not found'}, status=404)
         except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
-    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
+        # Store previous status to check the transition
+        previous_status = order.status
+        order.status = new_status
+        order.save()
 
+        # If status changed from 'PENDING' to 'COMPLETED', update the inventory
+        if previous_status == 'PENDING' and new_status == 'COMPLETED':
+            # Assume order.product is the product name that matches InventoryItem.name
+            inventory_item, created = InventoryItem.objects.get_or_create(
+                name=order.product,
+                defaults={'quantity': 0, 'description': '', 'threshold': 0}
+            )
+            inventory_item.quantity += order.quantity
+            inventory_item.save()  # This will recalculate the inventory status using save() method logic
+
+        return JsonResponse({'success': True, 'message': 'Order updated successfully'})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
 @csrf_exempt
 @require_POST
 def add_user(request):
