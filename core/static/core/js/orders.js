@@ -68,6 +68,56 @@ function confirmCloseModal() {
 
 // Attach event listeners once the DOM is ready
 document.addEventListener("DOMContentLoaded", function() {
+    // New Order: Submit Order Form
+    const orderForm = document.getElementById("orderForm");
+    if (orderForm) {
+        orderForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            // Collect new order data from form fields
+            const orderData = {
+                product: document.getElementById("product").value,
+                quantity: document.getElementById("quantity").value,
+                supplier: document.getElementById("supplier").value,
+                expectedDelivery: document.getElementById("expectedDelivery").value,
+                status: document.getElementById("status").value
+            };
+
+            console.log("Saving new order:", orderData);
+            fetch("/save_order/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken")
+                },
+                body: JSON.stringify(orderData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Save Order Response:", data);
+                if (data.success) {
+                    alert("Order saved successfully!");
+                    // Hide the modal after saving the order
+                    const modalElement = document.getElementById("newOrderModal");
+                    let modal = bootstrap.Modal.getInstance(modalElement);
+                    if (!modal) {
+                        modal = new bootstrap.Modal(modalElement);
+                    }
+                    modal.hide();
+                    // Optionally, refresh or update the orders list here
+                } else {
+                    alert("Error saving order: " + data.error);
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("An error occurred while saving the order.");
+            });
+        });
+    } else {
+        console.error("Order form not found!");
+    }
+
     // Test button for verifying JS functionality
     const testButton = document.getElementById("testUpdateButton");
     if (testButton) {
@@ -77,19 +127,6 @@ document.addEventListener("DOMContentLoaded", function() {
     } else {
         console.log("Test button not found!");
     }
-
-/*
-    button.addEventListener("click", function(event) {
-        console.log("Update Order button clicked"); // Check if this appears
-        event.preventDefault();
-        const orderId = this.dataset.orderId;
-        console.log("Order ID:", orderId);
-        const row = this.closest("tr");
-        const statusSelect = row.querySelector("select[name='status']");
-        const newStatus = statusSelect.value;
-        console.log("New status:", newStatus);
-        // ... rest of the fetch call ...
-    });*/
     
     // Update Order Status Buttons
     const updateButtons = document.querySelectorAll(".update-order-btn");
