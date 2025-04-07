@@ -211,6 +211,9 @@ def reports_view(request):
     return render(request, 'reports.html')
 
 @login_required
+def changelog_view(request):
+    return render(request, 'changelog.html')
+
 def logout_view(request):
     logout(request)
     messages.success(request, "You have been logged out.")
