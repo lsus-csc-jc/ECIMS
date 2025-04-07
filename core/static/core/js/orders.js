@@ -16,25 +16,31 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Function to filter orders based on search, status, and date range
 function filterOrders() {
     const searchQuery = document.getElementById("searchInput").value.toLowerCase();
-    const statusFilter = document.getElementById("statusFilter").value.toLowerCase();
+    const statusFilter = document.getElementById("statusFilter").value.toLowerCase().trim();
     const startDate = document.getElementById("startDate").value;
     const endDate = document.getElementById("endDate").value;
     const rows = document.querySelectorAll("tbody tr");
 
     rows.forEach(row => {
-        // Assuming table columns: 0: Order Number, 1: Supplier, 2: Date Ordered, 3: Expected Delivery, 4: Status (and button container)
+        // Column indices as defined in your table:
+        // 0: Order ID, 1: Supplier, 2: Date Created, 3: Delivery Date, 4: Status (select + button)
         const orderNumber = row.cells[0].innerText.toLowerCase();
         const supplier = row.cells[1].innerText.toLowerCase();
-        const statusText = row.cells[4].innerText.trim().toLowerCase();
-        const dateText = row.cells[3].innerText.trim();  // format "m/d/Y" or "N/A"
 
-        // Check search match (by order number or supplier)
+        // Extract only the selected status text from the <select> element
+        const statusSelect = row.cells[4].querySelector("select[name='status']");
+        const statusText = statusSelect 
+            ? statusSelect.options[statusSelect.selectedIndex].textContent.trim().toLowerCase() 
+            : row.cells[4].innerText.trim().toLowerCase();
+
+        const dateText = row.cells[3].innerText.trim();  // e.g., "m/d/Y" or "N/A"
+
+        // Check for search match (order number or supplier)
         const matchesSearch = orderNumber.includes(searchQuery) || supplier.includes(searchQuery);
-        // Check status match (case-insensitive)
-        const matchesStatus = (statusFilter === "" || statusText.includes(statusFilter));
+        // Check for status match (if filter is empty then allow, otherwise do an exact match)
+        const matchesStatus = (statusFilter === "" || statusText === statusFilter);
         // Check date range match if dates provided and date is valid (not "N/A")
         let matchesDate = true;
         if (startDate && endDate && dateText !== "N/A") {
@@ -45,10 +51,12 @@ function filterOrders() {
             const end = new Date(endDate);
             matchesDate = (orderDate >= start && orderDate <= end);
         }
-        // Show row if all conditions match
+
+        // Show row only if all conditions match
         row.style.display = (matchesSearch && matchesStatus && matchesDate) ? "" : "none";
     });
 }
+
 
 // Function to confirm closing the modal
 function confirmCloseModal() {
