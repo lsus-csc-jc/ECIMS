@@ -1,5 +1,7 @@
 console.log("orders.js is loaded");
 
+console.log("orders.js is loaded");
+
 // Helper function for CSRF token
 function getCookie(name) {
     let cookieValue = null;
@@ -24,12 +26,20 @@ function filterOrders() {
     const endDate = document.getElementById("endDate").value;
     const rows = document.querySelectorAll("tbody tr");
 
+    console.log("Filtering with:", { searchQuery, statusFilter, startDate, endDate });
+
     rows.forEach(row => {
-        // Assuming table columns: 0: Order Number, 1: Supplier, 2: Date Ordered, 3: Expected Delivery, 4: Status (and button container)
+        // Assuming table columns:
+        // 0: Order Number, 1: Supplier, 2: Date Ordered, 3: Expected Delivery, 4: Status (and possibly button container)
         const orderNumber = row.cells[0].innerText.toLowerCase();
         const supplier = row.cells[1].innerText.toLowerCase();
-        const statusText = row.cells[4].innerText.trim().toLowerCase();
-        const dateText = row.cells[3].innerText.trim();  // format "m/d/Y" or "N/A"
+
+        // Extract only the first line from the status cell in case it contains extra text (e.g., a button)
+        let statusText = row.cells[4].innerText.split("\n")[0].trim().toLowerCase();
+
+        const dateText = row.cells[3].innerText.trim();  // expected format "m/d/Y" or "N/A"
+
+        console.log("Row data:", { orderNumber, supplier, statusText, dateText });
 
         // Check search match (by order number or supplier)
         const matchesSearch = orderNumber.includes(searchQuery) || supplier.includes(searchQuery);
@@ -39,35 +49,25 @@ function filterOrders() {
         let matchesDate = true;
         if (startDate && endDate && dateText !== "N/A") {
             const parts = dateText.split("/");
-            // Convert m/d/Y to a Date object (note month is 0-indexed)
+            // Convert "m/d/Y" to a Date object (note: month is 0-indexed)
             const orderDate = new Date(parts[2], parts[0] - 1, parts[1]);
             const start = new Date(startDate);
             const end = new Date(endDate);
             matchesDate = (orderDate >= start && orderDate <= end);
         }
-        // Show row if all conditions match
+        // Show row if all conditions match, otherwise hide it
         row.style.display = (matchesSearch && matchesStatus && matchesDate) ? "" : "none";
     });
 }
 
-// Function to confirm closing the modal
-function confirmCloseModal() {
-    console.log("confirmCloseModal called");
-    if (confirm("Are you sure you want to close without saving?")) {
-        const modalElement = document.getElementById("newOrderModal");
-        let modal = bootstrap.Modal.getInstance(modalElement);
-        if (!modal) {
-            console.log("No existing modal instance found; creating a new one.");
-            modal = new bootstrap.Modal(modalElement);
-        }
-        modal.hide();
-        // Uncomment the following line if you want to redirect after closing:
-        // window.location.href = "orders.html";
-    }
-}
-
 // Attach event listeners once the DOM is ready
 document.addEventListener("DOMContentLoaded", function() {
+    // Attach filterOrders listeners
+    document.getElementById("searchInput").addEventListener("input", filterOrders);
+    document.getElementById("statusFilter").addEventListener("change", filterOrders);
+    document.getElementById("startDate").addEventListener("change", filterOrders);
+    document.getElementById("endDate").addEventListener("change", filterOrders);
+
     // New Order: Submit Order Form
     const orderForm = document.getElementById("orderForm");
     if (orderForm) {
@@ -132,7 +132,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const updateButtons = document.querySelectorAll(".update-order-btn");
     updateButtons.forEach(button => {
         button.addEventListener("click", function(event) {
-            console.log("Update Order button clicked"); // Debug log
+            console.log("Update Order button clicked");
             event.preventDefault();
             const orderId = this.dataset.orderId;
             // Find the select element in the same row
