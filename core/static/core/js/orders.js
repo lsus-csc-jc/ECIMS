@@ -18,10 +18,9 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Function to filter orders based on search, status, and date range
 function filterOrders() {
     const searchQuery = document.getElementById("searchInput").value.toLowerCase();
-    const statusFilter = document.getElementById("statusFilter").value.toLowerCase();
+    const statusFilter = document.getElementById("statusFilter").value.toLowerCase().trim();
     const startDate = document.getElementById("startDate").value;
     const endDate = document.getElementById("endDate").value;
     const rows = document.querySelectorAll("tbody tr");
@@ -29,6 +28,7 @@ function filterOrders() {
     console.log("Filtering with:", { searchQuery, statusFilter, startDate, endDate });
 
     rows.forEach(row => {
+<<<<<<< HEAD
         // Assuming table columns:
         // 0: Order Number, 1: Supplier, 2: Date Ordered, 3: Expected Delivery, 4: Status (and possibly button container)
         const orderNumber = row.cells[0].innerText.toLowerCase();
@@ -40,11 +40,25 @@ function filterOrders() {
         const dateText = row.cells[3].innerText.trim();  // expected format "m/d/Y" or "N/A"
 
         console.log("Row data:", { orderNumber, supplier, statusText, dateText });
+=======
+        // Column indices as defined in your table:
+        // 0: Order ID, 1: Supplier, 2: Date Created, 3: Delivery Date, 4: Status (select + button)
+        const orderNumber = row.cells[0].innerText.toLowerCase();
+        const supplier = row.cells[1].innerText.toLowerCase();
+>>>>>>> 23f105c0628c16bb60ea639301d0e5d5d7aa3b62
 
-        // Check search match (by order number or supplier)
+        // Extract only the selected status text from the <select> element
+        const statusSelect = row.cells[4].querySelector("select[name='status']");
+        const statusText = statusSelect 
+            ? statusSelect.options[statusSelect.selectedIndex].textContent.trim().toLowerCase() 
+            : row.cells[4].innerText.trim().toLowerCase();
+
+        const dateText = row.cells[3].innerText.trim();  // e.g., "m/d/Y" or "N/A"
+
+        // Check for search match (order number or supplier)
         const matchesSearch = orderNumber.includes(searchQuery) || supplier.includes(searchQuery);
-        // Check status match (case-insensitive)
-        const matchesStatus = (statusFilter === "" || statusText.includes(statusFilter));
+        // Check for status match (if filter is empty then allow, otherwise do an exact match)
+        const matchesStatus = (statusFilter === "" || statusText === statusFilter);
         // Check date range match if dates provided and date is valid (not "N/A")
         let matchesDate = true;
         if (startDate && endDate && dateText !== "N/A") {
@@ -55,11 +69,36 @@ function filterOrders() {
             const end = new Date(endDate);
             matchesDate = (orderDate >= start && orderDate <= end);
         }
+<<<<<<< HEAD
         // Show row if all conditions match, otherwise hide it
+=======
+
+        // Show row only if all conditions match
+>>>>>>> 23f105c0628c16bb60ea639301d0e5d5d7aa3b62
         row.style.display = (matchesSearch && matchesStatus && matchesDate) ? "" : "none";
     });
 }
 
+<<<<<<< HEAD
+=======
+
+// Function to confirm closing the modal
+function confirmCloseModal() {
+    console.log("confirmCloseModal called");
+    if (confirm("Are you sure you want to close without saving?")) {
+        const modalElement = document.getElementById("newOrderModal");
+        let modal = bootstrap.Modal.getInstance(modalElement);
+        if (!modal) {
+            console.log("No existing modal instance found; creating a new one.");
+            modal = new bootstrap.Modal(modalElement);
+        }
+        modal.hide();
+        // Uncomment the following line if you want to redirect after closing:
+        // window.location.href = "orders.html";
+    }
+}
+
+>>>>>>> 23f105c0628c16bb60ea639301d0e5d5d7aa3b62
 // Attach event listeners once the DOM is ready
 document.addEventListener("DOMContentLoaded", function() {
     // Attach filterOrders listeners
