@@ -225,71 +225,73 @@
                             </div>
     
                    <!-- Table Section -->
-<div class="table-responsive">
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Order ID</th>
-                <th>Supplier</th>
-                <th>Date Created</th>
-                <th>Delivery Date</th>
-                <th>Status</th>
-                <th></th> <!-- Plus sign column -->
-            </tr>
-        </thead>
-        <tbody>
-            {% for order in orders %}
-            <tr>
-                <td>{{ order.order_number }}</td>
-                <td>{{ order.supplier.name }}</td>
-                <td>{{ order.date_ordered|date:"m/d/Y" }}</td>
-                <td>
-                    {% if order.expected_delivery %}
-                        {{ order.expected_delivery|date:"m/d/Y" }}
-                    {% else %}
-                        N/A
-                    {% endif %}
-                </td>
-                <td>
-                    <select name="status" class="form-select">
-                        <option value="PENDING" {% if order.status == "PENDING" %}selected{% endif %}>Pending</option>
-                        <option value="COMPLETED" {% if order.status == "COMPLETED" %}selected{% endif %}>Completed</option>
-                        <option value="CANCELLED" {% if order.status == "CANCELLED" %}selected{% endif %}>Cancelled</option>
-                    </select>
-                    <button type="button" id="updateOrderBtn-{{ order.id }}" class="btn btn-success update-order-btn" data-order-id="{{ order.id }}">Update Order</button>
-
-
-                </td>
-                <td>
-                    <button class="btn btn-primary">+</button>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="6">No orders found.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
- 
-
-</div>
-
-
-                        </div>
-                    </main>
-                </div>
+                   <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Supplier</th>
+                                <th>Date Created</th>
+                                <th>Delivery Date</th>
+                                <th>Status</th>
+                                <th></th> <!-- Plus sign column -->
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+<tr class="order-row">
+    <td>{{ order.order_number }}</td>
+    <td>{{ order.supplier.name }}</td>
+    <td>{{ order.date_ordered|date:"m/d/Y" }}</td>
+    <td>
+        {% if order.expected_delivery %}
+            {{ order.expected_delivery|date:"m/d/Y" }}
+        {% else %}
+            N/A
+        {% endif %}
+    </td>
+    <td>
+        <select name="status" class="form-select">
+            <option value="PENDING" {% if order.status == "PENDING" %}selected{% endif %}>Pending</option>
+            <option value="COMPLETED" {% if order.status == "COMPLETED" %}selected{% endif %}>Completed</option>
+            <option value="CANCELLED" {% if order.status == "CANCELLED" %}selected{% endif %}>Cancelled</option>
+        </select>
+        <button type="button" id="updateOrderBtn-{{ order.id }}" class="btn btn-success update-order-btn" data-order-id="{{ order.id }}">Update Order</button>
+    </td>
+    <td>
+        <button type="button" class="btn btn-primary" onclick="toggleDetails('{{ order.id }}')">+</button>
+    </td>
+</tr>
+<tr id="details-{{ order.id }}" style="display: none;">
+    <td colspan="7">
+        <div class="d-flex align-items-center">
+            <div class="me-3">
+                <strong>Product:</strong> {{ order.product }}
+            </div>
+            <div>
+                <strong>Quantity:</strong> {{ order.quantity }}
             </div>
         </div>
-    </div>
-    
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="7">No orders found.</td>
+</tr>
+{% endfor %}
+
+                        </tbody>
+                    </table>
+                </div>
+                
+                
     <!-- New Order Modal -->
     <div class="modal fade" id="newOrderModal" tabindex="-1" aria-labelledby="newOrderModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="newOrderModalLabel">Create New Order</h5>
-                    <button type="button" class="btn-close" onclick="confirmCloseModal()" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="orderForm">
@@ -303,8 +305,10 @@
                         </div>
                         <div class="mb-3">
                             <label for="supplier" class="form-label">Supplier</label>
-                            <input type="text" class="form-control" id="supplier">
-                        </div>
+                            <select class="form-control" id="supplier" name="supplier">
+                                <!-- Options will be dynamically populated -->
+                            </select>
+                        </div>                        
                         <div class="mb-3">
                             <label for="expectedDelivery" class="form-label">Expected Delivery Date</label>
                             <input type="date" class="form-control" id="expectedDelivery" required>

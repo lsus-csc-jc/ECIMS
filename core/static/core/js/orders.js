@@ -16,42 +16,77 @@ function getCookie(name) {
     return cookieValue;
 }
 
+// Function: Update Supplier Dropdown
+function updateSupplierDropdown() {
+    console.log("updateSupplierDropdown called");
+    fetch("/get_suppliers/")
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Network response not ok");
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("Suppliers data:", data);
+            const supplierSelect = document.getElementById("supplier");
+            supplierSelect.innerHTML = ""; // Clear any existing options
+            data.suppliers.forEach(supplier => {
+                const option = document.createElement("option");
+                option.value = supplier.id;         // Use supplier id as value
+                option.textContent = supplier.name;   // Display supplier's name
+                supplierSelect.appendChild(option);
+            });
+        })
+        .catch(error => console.error("Error fetching suppliers:", error));
+}
+
+// Function: Toggle the details row for an order
+function toggleDetails(orderId) {
+    const detailsRow = document.getElementById('details-' + orderId);
+    if (detailsRow) {
+        if (detailsRow.style.display === 'none' || detailsRow.style.display === '') {
+            detailsRow.style.display = 'table-row';
+        } else {
+            detailsRow.style.display = 'none';
+        }
+    } else {
+        console.error("No details row found for order ID:", orderId);
+    }
+}
+
+// Function: Filter Orders
 function filterOrders() {
     console.log("filterOrders() triggered");
 
-    // Get search/filter values from the UI
+    // Get filter values from the UI
     const searchQuery = document.getElementById("searchInput").value.toLowerCase();
     const statusFilter = document.getElementById("statusFilter").value.toLowerCase().trim();
     const startDateValue = document.getElementById("startDate").value;
     const endDateValue = document.getElementById("endDate").value;
-    const rows = document.querySelectorAll("tbody tr");
+    // Only select rows that are order summaries using the "order-row" class.
+    const rows = document.querySelectorAll("tbody tr.order-row");
 
-    // Log the date inputs
     console.log("Start Date Input:", startDateValue, "End Date Input:", endDateValue);
-
-    // Parse the start and end dates.
-    // <input type="date"> returns dates in "yyyy-mm-dd" format.
     const startDate = startDateValue ? new Date(startDateValue) : null;
     const endDate = endDateValue ? new Date(endDateValue) : null;
     console.log("Parsed Start Date:", startDate, "Parsed End Date:", endDate);
 
     rows.forEach((row, idx) => {
-        // Get relevant fields from the row
+        // Get values from cells
         const orderNumber = row.cells[0].innerText.toLowerCase();
-        const supplier = row.cells[1].innerText.toLowerCase();
+        const supplierText = row.cells[1].innerText.toLowerCase();
         const statusSelect = row.cells[4].querySelector("select[name='status']");
-        const statusText = statusSelect 
-            ? statusSelect.options[statusSelect.selectedIndex].textContent.trim().toLowerCase() 
-            : row.cells[4].innerText.trim().toLowerCase();
+        // Use select's current value for the status
+        const statusText = statusSelect ? statusSelect.value.toLowerCase().trim() : "";
 
-        // --- Date Parsing ---
-        // Currently using cell index 3 (Delivery Date). Change to 2 if using Date Created.
-        const dateText = row.cells[3].innerText.trim();  // e.g., "m/d/Y" or "N/A"
+        console.log(`Row ${idx} status text: "${statusText}"`);
+
+        // Date Parsing (Assuming Delivery Date is at cell index 3)
+        const dateText = row.cells[3].innerText.trim();
         let orderDate = null;
         if (dateText !== "N/A") {
             const parts = dateText.split("/");
             if (parts.length === 3) {
-                // JavaScript months are 0-indexed.
                 orderDate = new Date(parts[2], parts[0] - 1, parts[1]);
                 console.log(`Row ${idx} parsed order date: ${orderDate} from ${dateText}`);
             } else {
@@ -61,10 +96,9 @@ function filterOrders() {
             console.log(`Row ${idx} date is N/A`);
         }
         
-        // --- Date Filtering ---
+        // Date Filtering
         let matchesDate = true;
         if (orderDate) {
-            // Allow partial filtering if only one boundary is provided.
             if (startDate && endDate) {
                 matchesDate = (orderDate >= startDate && orderDate <= endDate);
             } else if (startDate) {
@@ -75,21 +109,22 @@ function filterOrders() {
             console.log(`Row ${idx} date filtering: orderDate = ${orderDate}, matchesDate = ${matchesDate}`);
         }
         
-        // --- Other Filters ---
-        const matchesSearch = orderNumber.includes(searchQuery) || supplier.includes(searchQuery);
+        // Other Filters
+        const matchesSearch = orderNumber.includes(searchQuery) || supplierText.includes(searchQuery);
         const matchesStatus = (statusFilter === "" || statusText === statusFilter);
-
-        // Show or hide the row based on all conditions.
         const finalMatch = (matchesSearch && matchesStatus && matchesDate);
         console.log(`Row ${idx} final match: ${finalMatch}`);
         
+        // Set the row visibility
         row.style.display = finalMatch ? "" : "none";
     });
 }
 
-// Attach event listeners once the DOM is ready
 document.addEventListener("DOMContentLoaded", function() {
-    // Use JavaScript-based listeners and consider removing inline events from your HTML.
+    // Populate the supplier dropdown on page load
+    updateSupplierDropdown();
+    
+    // Attach filter listeners
     document.getElementById("searchInput").addEventListener("input", filterOrders);
     document.getElementById("statusFilter").addEventListener("change", filterOrders);
     document.getElementById("startDate").addEventListener("change", filterOrders);
@@ -123,14 +158,27 @@ document.addEventListener("DOMContentLoaded", function() {
                 console.log("Save Order Response:", data);
                 if (data.success) {
                     alert("Order saved successfully!");
-                    // Hide the modal after saving the order
+
+                    // Update the supplier dropdown if the response includes an updated list.
+                    if (data.suppliers) {
+                        const supplierSelect = document.getElementById("supplier");
+                        supplierSelect.innerHTML = "";
+                        data.suppliers.forEach(supplier => {
+                            const option = document.createElement("option");
+                            option.value = supplier.id;
+                            option.textContent = supplier.name;
+                            supplierSelect.appendChild(option);
+                        });
+                    }
+                    
+                    // Hide the modal after saving the order.
                     const modalElement = document.getElementById("newOrderModal");
                     let modal = bootstrap.Modal.getInstance(modalElement);
                     if (!modal) {
                         modal = new bootstrap.Modal(modalElement);
                     }
                     modal.hide();
-                    // Optionally, refresh/update the orders list here
+                    // Optionally, refresh/update the orders list here.
                 } else {
                     alert("Error saving order: " + data.error);
                 }
