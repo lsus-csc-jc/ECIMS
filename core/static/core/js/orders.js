@@ -1,7 +1,5 @@
 console.log("orders.js is loaded");
 
-console.log("orders.js is loaded");
-
 // Helper function for CSRF token
 function getCookie(name) {
     let cookieValue = null;
@@ -19,89 +17,79 @@ function getCookie(name) {
 }
 
 function filterOrders() {
+    console.log("filterOrders() triggered");
+
+    // Get search/filter values from the UI
     const searchQuery = document.getElementById("searchInput").value.toLowerCase();
     const statusFilter = document.getElementById("statusFilter").value.toLowerCase().trim();
-    const startDate = document.getElementById("startDate").value;
-    const endDate = document.getElementById("endDate").value;
+    const startDateValue = document.getElementById("startDate").value;
+    const endDateValue = document.getElementById("endDate").value;
     const rows = document.querySelectorAll("tbody tr");
 
-    console.log("Filtering with:", { searchQuery, statusFilter, startDate, endDate });
+    // Log the date inputs
+    console.log("Start Date Input:", startDateValue, "End Date Input:", endDateValue);
 
-    rows.forEach(row => {
-<<<<<<< HEAD
-        // Assuming table columns:
-        // 0: Order Number, 1: Supplier, 2: Date Ordered, 3: Expected Delivery, 4: Status (and possibly button container)
+    // Parse the start and end dates.
+    // <input type="date"> returns dates in "yyyy-mm-dd" format.
+    const startDate = startDateValue ? new Date(startDateValue) : null;
+    const endDate = endDateValue ? new Date(endDateValue) : null;
+    console.log("Parsed Start Date:", startDate, "Parsed End Date:", endDate);
+
+    rows.forEach((row, idx) => {
+        // Get relevant fields from the row
         const orderNumber = row.cells[0].innerText.toLowerCase();
         const supplier = row.cells[1].innerText.toLowerCase();
-
-        // Extract only the first line from the status cell in case it contains extra text (e.g., a button)
-        let statusText = row.cells[4].innerText.split("\n")[0].trim().toLowerCase();
-
-        const dateText = row.cells[3].innerText.trim();  // expected format "m/d/Y" or "N/A"
-
-        console.log("Row data:", { orderNumber, supplier, statusText, dateText });
-=======
-        // Column indices as defined in your table:
-        // 0: Order ID, 1: Supplier, 2: Date Created, 3: Delivery Date, 4: Status (select + button)
-        const orderNumber = row.cells[0].innerText.toLowerCase();
-        const supplier = row.cells[1].innerText.toLowerCase();
->>>>>>> 23f105c0628c16bb60ea639301d0e5d5d7aa3b62
-
-        // Extract only the selected status text from the <select> element
         const statusSelect = row.cells[4].querySelector("select[name='status']");
         const statusText = statusSelect 
             ? statusSelect.options[statusSelect.selectedIndex].textContent.trim().toLowerCase() 
             : row.cells[4].innerText.trim().toLowerCase();
 
+        // --- Date Parsing ---
+        // Currently using cell index 3 (Delivery Date). Change to 2 if using Date Created.
         const dateText = row.cells[3].innerText.trim();  // e.g., "m/d/Y" or "N/A"
-
-        // Check for search match (order number or supplier)
-        const matchesSearch = orderNumber.includes(searchQuery) || supplier.includes(searchQuery);
-        // Check for status match (if filter is empty then allow, otherwise do an exact match)
-        const matchesStatus = (statusFilter === "" || statusText === statusFilter);
-        // Check date range match if dates provided and date is valid (not "N/A")
-        let matchesDate = true;
-        if (startDate && endDate && dateText !== "N/A") {
+        let orderDate = null;
+        if (dateText !== "N/A") {
             const parts = dateText.split("/");
-            // Convert "m/d/Y" to a Date object (note: month is 0-indexed)
-            const orderDate = new Date(parts[2], parts[0] - 1, parts[1]);
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            matchesDate = (orderDate >= start && orderDate <= end);
+            if (parts.length === 3) {
+                // JavaScript months are 0-indexed.
+                orderDate = new Date(parts[2], parts[0] - 1, parts[1]);
+                console.log(`Row ${idx} parsed order date: ${orderDate} from ${dateText}`);
+            } else {
+                console.warn(`Row ${idx} unexpected date format: ${dateText}`);
+            }
+        } else {
+            console.log(`Row ${idx} date is N/A`);
         }
-<<<<<<< HEAD
-        // Show row if all conditions match, otherwise hide it
-=======
+        
+        // --- Date Filtering ---
+        let matchesDate = true;
+        if (orderDate) {
+            // Allow partial filtering if only one boundary is provided.
+            if (startDate && endDate) {
+                matchesDate = (orderDate >= startDate && orderDate <= endDate);
+            } else if (startDate) {
+                matchesDate = (orderDate >= startDate);
+            } else if (endDate) {
+                matchesDate = (orderDate <= endDate);
+            }
+            console.log(`Row ${idx} date filtering: orderDate = ${orderDate}, matchesDate = ${matchesDate}`);
+        }
+        
+        // --- Other Filters ---
+        const matchesSearch = orderNumber.includes(searchQuery) || supplier.includes(searchQuery);
+        const matchesStatus = (statusFilter === "" || statusText === statusFilter);
 
-        // Show row only if all conditions match
->>>>>>> 23f105c0628c16bb60ea639301d0e5d5d7aa3b62
-        row.style.display = (matchesSearch && matchesStatus && matchesDate) ? "" : "none";
+        // Show or hide the row based on all conditions.
+        const finalMatch = (matchesSearch && matchesStatus && matchesDate);
+        console.log(`Row ${idx} final match: ${finalMatch}`);
+        
+        row.style.display = finalMatch ? "" : "none";
     });
 }
 
-<<<<<<< HEAD
-=======
-
-// Function to confirm closing the modal
-function confirmCloseModal() {
-    console.log("confirmCloseModal called");
-    if (confirm("Are you sure you want to close without saving?")) {
-        const modalElement = document.getElementById("newOrderModal");
-        let modal = bootstrap.Modal.getInstance(modalElement);
-        if (!modal) {
-            console.log("No existing modal instance found; creating a new one.");
-            modal = new bootstrap.Modal(modalElement);
-        }
-        modal.hide();
-        // Uncomment the following line if you want to redirect after closing:
-        // window.location.href = "orders.html";
-    }
-}
-
->>>>>>> 23f105c0628c16bb60ea639301d0e5d5d7aa3b62
 // Attach event listeners once the DOM is ready
 document.addEventListener("DOMContentLoaded", function() {
-    // Attach filterOrders listeners
+    // Use JavaScript-based listeners and consider removing inline events from your HTML.
     document.getElementById("searchInput").addEventListener("input", filterOrders);
     document.getElementById("statusFilter").addEventListener("change", filterOrders);
     document.getElementById("startDate").addEventListener("change", filterOrders);
@@ -113,7 +101,6 @@ document.addEventListener("DOMContentLoaded", function() {
         orderForm.addEventListener("submit", function(event) {
             event.preventDefault();
 
-            // Collect new order data from form fields
             const orderData = {
                 product: document.getElementById("product").value,
                 quantity: document.getElementById("quantity").value,
@@ -143,7 +130,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         modal = new bootstrap.Modal(modalElement);
                     }
                     modal.hide();
-                    // Optionally, refresh or update the orders list here
+                    // Optionally, refresh/update the orders list here
                 } else {
                     alert("Error saving order: " + data.error);
                 }
@@ -174,17 +161,11 @@ document.addEventListener("DOMContentLoaded", function() {
             console.log("Update Order button clicked");
             event.preventDefault();
             const orderId = this.dataset.orderId;
-            // Find the select element in the same row
             const row = this.closest("tr");
             const statusSelect = row.querySelector("select[name='status']");
             const newStatus = statusSelect.value;
+            const payload = { status: newStatus };
 
-            // Prepare the payload for update
-            const payload = {
-                status: newStatus
-            };
-
-            // Make the AJAX call to update order status
             fetch(`/update_order/${orderId}/`, {
                 method: 'POST',
                 headers: {
