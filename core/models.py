@@ -49,6 +49,7 @@ class InventoryItem(models.Model):
     status = models.PositiveSmallIntegerField(choices=INV_STATUS_CHOICES, default=UNKNOWN)
     date_modified = models.DateTimeField(auto_now=True)
     date_added = models.DateTimeField(auto_now_add=True)
+    alert_triggered = models.BooleanField(default=False)
 
     def calculate_inv_status(self):
         if self.threshold > 0:

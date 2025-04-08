@@ -5,14 +5,14 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
 import json
 import uuid
 
 from .forms import SignUpForm  # Import the fixed signup form
-from .models import Order, Supplier, Profile
+from .models import Order, Supplier, Profile, InventoryItem
 from .decorators import role_required
 
 User = get_user_model()
@@ -181,6 +181,68 @@ def add_inventory_item(request):
 def delete_inventory_item(request, item_id):
     # Logic to delete an inventory item (implement deletion logic here)
     pass
+
+@csrf_exempt
+@require_POST
+def mark_alert_viewed(request, item_id):
+    try:
+        item = InventoryItem.objects.get(id=item_id)
+        item.alert_triggered = True
+        item.save()
+        return JsonResponse({"success": True})
+    except InventoryItem.DoesNotExist:
+        return JsonResponse({"error": "Item not found"}, status=404)
+
+@csrf_exempt
+@require_http_methods(["PUT"])
+def update_inventory_item(request, item_id):
+    print("⚙️ PUT request received to update inventory item")
+
+    try:
+        item = InventoryItem.objects.get(id=item_id)
+        data = json.loads(request.body)
+
+        # Store previous quantity and threshold for comparison (optional debug)
+        previous_quantity = item.quantity
+        previous_threshold = item.threshold
+
+        # Update fields
+        item.name = data.get("name", item.name)
+        item.quantity = int(data.get("quantity", item.quantity))
+        item.threshold = int(data.get("threshold", item.threshold))
+
+        print(f"🔄 Prev: qty={previous_quantity}, th={previous_threshold}")
+        print(f"✅ New: qty={item.quantity}, th={item.threshold}")
+
+        # ✅ Core logic to reset alert
+        if item.quantity >= item.threshold:
+            if item.alert_triggered:
+                item.alert_triggered = False
+                print("🟢 alert_triggered reset to False")
+        else:
+            print("🟡 Still below threshold, keeping alert_triggered:", item.alert_triggered)
+
+        item.save()
+
+        print("💾 Final saved alert_triggered:", item.alert_triggered)
+
+        return JsonResponse({
+            "success": True,
+            "item": {
+                "id": item.id,
+                "name": item.name,
+                "quantity": item.quantity,
+                "threshold": item.threshold,
+                "status": item.status,
+                "alert_triggered": item.alert_triggered,
+            }
+        })
+
+    except InventoryItem.DoesNotExist:
+        return JsonResponse({"error": "Item not found"}, status=404)
+    except Exception as e:
+        print(f"❌ Error updating item: {e}")
+        return JsonResponse({"error": str(e)}, status=500)
 
 @login_required
 def settings_view(request):

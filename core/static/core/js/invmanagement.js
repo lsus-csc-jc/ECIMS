@@ -7,16 +7,6 @@ $(document).ready(function () {
     let modalActive = false;
     let lowStockQueue = [];
 
-    function getViewedLowStockIds() {
-        return new Set(JSON.parse(localStorage.getItem("viewedLowStockIds") || "[]"));
-    }
-
-    function markAsViewed(productId) {
-        const viewed = getViewedLowStockIds();
-        viewed.add(productId.toString());
-        localStorage.setItem("viewedLowStockIds", JSON.stringify(Array.from(viewed)));
-    }
-
     async function fetchInventoryData(showAlert = false) {
         console.log("🔄 Fetching inventory data...");
 
@@ -81,40 +71,45 @@ $(document).ready(function () {
     }
 
     function checkAndQueueLowStock(data, oldStatuses) {
-        const viewed = getViewedLowStockIds();
-
+        console.log("🔍 Checking for low-stock items...");
+        
         data.forEach(product => {
             const prevStatus = oldStatuses.get(product.id);
             const isNowLowStock = product.status === 2 || product.status === 1;
-            const wasLowStock = prevStatus === 2 || prevStatus === 1;
-
-            const statusChanged = prevStatus !== product.status;
+            const alertAlreadyTriggered = product.alert_triggered === true;
+    
+            console.log(`➡️ ${product.name} | Status: ${product.status} | Triggered: ${product.alert_triggered}`);
+    
+            // Skip products that are already triggered or not in low stock
+            if (!isNowLowStock || alertAlreadyTriggered) return;
+    
             const wentFromHighToLow = (prevStatus === 3 || prevStatus === undefined) && isNowLowStock;
-
-            if (statusChanged && isNowLowStock && viewed.has(product.id.toString())) {
-                viewed.delete(product.id.toString());
-                localStorage.setItem("viewedLowStockIds", JSON.stringify(Array.from(viewed)));
-            }
-
-            if (isNowLowStock && !viewed.has(product.id.toString()) && (statusChanged || wentFromHighToLow) && !lowStockQueue.some(p => p.id === product.id)) {
+    
+            if (!lowStockQueue.some(p => p.id === product.id) && (prevStatus !== product.status || wentFromHighToLow)) {
                 lowStockQueue.push(product);
+                console.log("🚨 Queued Low Stock:", product.name);
             }
-
+    
             productStatusMap.set(product.id, product.status);
         });
-
-        if (!modalActive) showNextAlert();
+    
+        console.log("📋 Queue:", lowStockQueue.map(p => p.name));
+        if (!modalActive && lowStockQueue.length > 0) {
+            showNextAlert();
+        }
     }
 
     function showNextAlert() {
+        console.log("📣 Running showNextAlert() — Queue length:", lowStockQueue.length);
+    
         if (lowStockQueue.length === 0) {
             modalActive = false;
             return;
         }
-
+    
         modalActive = true;
         const product = lowStockQueue.shift();
-
+    
         const content = `
             <strong>${product.name}</strong><br>
             Quantity: ${product.quantity}<br>
@@ -122,10 +117,14 @@ $(document).ready(function () {
             <small>Status: ${product.status === 1 ? "Out of Stock" : "Low Stock"}</small>
         `;
         $("#notificationContent").html(content);
+    
         const modal = new bootstrap.Modal(document.getElementById("notificationModal"));
         modal.show();
-
+    
+        console.log("🟡 Modal shown for:", product.name, "| ID:", product.id);
+    
         $("#markViewedBtn").off("click").on("click", function () {
+            console.log("🟢 Mark Viewed clicked for:", product.id);
             markAsViewed(product.id);
             modal.hide();
             setTimeout(() => {
@@ -134,6 +133,31 @@ $(document).ready(function () {
             }, 500);
         });
     }
+
+    function markAsViewed(productId) {
+        console.log("📤 Attempting to mark product as viewed:", productId);  // DEBUG LINE
+    
+        fetch(`/api/v1/items/${productId}/mark_alert_viewed/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCSRFToken()
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Failed to mark product ${productId}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("✅ Marked as viewed:", data);  // DEBUG LINE
+        })
+        .catch(error => {
+            console.error("❌ Error marking as viewed:", error);
+        });
+    }
+    
 
     $("#searchInput").on("keyup", function () {
         let value = $(this).val().toLowerCase();
@@ -212,6 +236,15 @@ $(document).ready(function () {
             quantity: updatedQuantity,
             threshold: updatedThreshold
         };
+
+        fetch(`${apiUrl}${productId}/`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCSRFToken()
+            },
+            body: JSON.stringify(updatedProduct)
+        });
 
         try {
             const response = await fetch(`${apiUrl}${productId}/`, {
