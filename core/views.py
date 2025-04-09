@@ -140,21 +140,18 @@ def add_user(request):
     password = request.POST.get("password")
     role = request.POST.get("role")
     
-    # Check that all required fields are provided
     if not (name and email and password and role):
         return JsonResponse({"success": False, "error": "Missing required fields."})
     
     try:
-        # Create a new user; create_user automatically hashes the password
         user = User.objects.create_user(username=name, email=email, password=password)
-        
-        # Set the role on the associated profile (assumes OneToOne relationship exists)
         user.profile.role = role
         user.profile.save()
         
         response_data = {
             "success": True,
             "user": {
+                "id": user.id,         # Added user id
                 "username": user.username,
                 "email": user.email,
                 "role": user.profile.role,
@@ -164,19 +161,23 @@ def add_user(request):
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)})
 
+
 def reset_user_password(request, user_id):
     user = get_object_or_404(User, id=user_id)
     if request.method == 'POST':
         new_password = request.POST.get('new_password')
         confirm_password = request.POST.get('confirm_password')
+        
         if new_password and new_password == confirm_password:
-            user.set_password(new_password)  # This hashes the new password
+            user.set_password(new_password)
             user.save()
             messages.success(request, "Password reset successfully!")
-            return redirect('settings')  # Change to your desired redirect
         else:
             messages.error(request, "Passwords do not match or are empty.")
-    return render(request, 'reset_password.html', {'user': user})
+        
+        # Redirect back to your settings page or user management page
+        return redirect('settings')  # Adjust to your actual redirect
+    return redirect('settings')
 
 
 def delete_user(request, user_id):

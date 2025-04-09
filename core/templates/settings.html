@@ -266,55 +266,132 @@
   </div>
 </div>
 
+<!-- Users Section -->
+<div class="tab-pane fade" id="users">
+  <div class="container-fluid">
+    <h2>User Management</h2>
+    <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addUserModal">Add User</button>
+    <div class="table-responsive">
+      <table class="table table-hover mt-3">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Password</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="userTableBody">
+          {% for user in users %}
+          <tr data-userid="{{ user.id }}">
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.profile.role }}</td>
+            <td>
+              <button 
+                type="button"
+                class="btn btn-sm btn-warning reset-password-btn"
+                data-bs-toggle="modal"
+                data-bs-target="#resetPasswordModal"
+                data-user-id="{{ user.id }}"
+                data-user-name="{{ user.username }}"
+              >
+                Reset Password
+              </button>
+            </td>
+            <td>
+              <button type="button" class="btn btn-sm btn-warning edit-user">Edit</button>
+              <form method="POST" action="{% url 'delete_user' user.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5">No users found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>                    
+      </table>
+    </div>
+  </div>
+</div>
 
-            <!-- Users Section -->
-            <div class="tab-pane fade" id="users">
-              <div class="container-fluid">
-                <h2>User Management</h2>
-                <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addUserModal">Add User</button>
-                <div class="table-responsive">
-                  <table class="table table-hover mt-3">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Password</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody id="userTableBody">
-                      {% for user in users %}
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
 
-                       <tr data-userid="{{ user.id }}">
-                        <td class="user-name">{{ user.username }}</td>
-                        <td class="user-email">{{ user.email }}</td>
-                        <td class="user-role">{{ user.profile.role }}</td>
-                        <td>
-                          <a href="{% url 'reset_user_password' user.id %}" class="btn btn-sm btn-warning">Reset Password</a>
-                        </td>
-                        <td>
- 
-                          <button type="button" class="btn btn-sm btn-warning edit-user">Edit</button>
-                          <form method="POST" action="{% url 'delete_user' user.id %}" style="display:inline;">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                          </form>
-                        </td>
-                      </tr>
-                        
-                      </tr>
-                      {% empty %}
-                      <tr>
-                        <td colspan="5">No users found.</td>
-                      </tr>
-                      {% endfor %}
-                    </tbody>                    
-                  </table>
-                </div>
-              </div>
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <h5 class="modal-title" id="resetPasswordModalLabel">
+          Reset Password for <span id="modalUserName"></span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- Modal Body with Reset Password Form -->
+      <div class="modal-body">
+        <form id="resetPasswordForm" method="post" action="">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="new_password_modal" class="form-label">New Password:</label>
+            <div class="input-group">
+              <input
+                type="password"
+                class="form-control"
+                id="new_password_modal"
+                name="new_password"
+                required
+              >
+              <button
+                class="btn btn-outline-secondary"
+                type="button"
+                id="toggleNewPassword"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
             </div>
           </div>
+
+          <div class="mb-3">
+            <label for="confirm_password_modal" class="form-label">Confirm Password:</label>
+            <div class="input-group">
+              <input
+                type="password"
+                class="form-control"
+                id="confirm_password_modal"
+                name="confirm_password"
+                required
+              >
+              <button
+                class="btn btn-outline-secondary"
+                type="button"
+                id="toggleConfirmPassword"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-success">Save Password</button>
+        </form>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
 
           <!-- Add/Edit User Modal -->
           <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
@@ -362,6 +439,12 @@
         </main>
       </div>
     </div>
+
+
+
+
+ 
+
 
     <!-- Bootstrap JS -->
     <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
