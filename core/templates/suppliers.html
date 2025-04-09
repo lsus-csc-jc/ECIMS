@@ -156,12 +156,6 @@
               </a>
             </li>
             <li class="nav-item">
-               <a class="nav-link d-flex align-items-center gap-2" href="#" data-page="reports.html">
-                <svg class="bi"><use xlink:href="#graph-up"/></svg>
-                Reports
-              </a>
-            </li>
-            <li class="nav-item">
               <a class="nav-link d-flex align-items-center gap-2" href="#" data-page="changelog.html">
                 <svg class="bi"><use xlink:href="#puzzle"/></svg>
                 Change Log
@@ -271,4 +265,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="{% static 'core/js/navigation.js' %}"></script>
     <script src="{% static 'core/js/suppliers.js' %}"></script>
+    {% include 'low_stock_alert.html' %}
+  </body> 
 </html>

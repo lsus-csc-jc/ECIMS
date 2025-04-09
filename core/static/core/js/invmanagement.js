@@ -3,8 +3,11 @@ $(document).ready(function () {
 
     const apiUrl = "/api/v1/items/";
     const tableBody = $("#tableBody");
+    const productStatusMap = new Map();
+    let modalActive = false;
+    let lowStockQueue = [];
 
-    async function fetchInventoryData() {
+    async function fetchInventoryData(showAlert = false) {
         console.log("🔄 Fetching inventory data...");
 
         try {
@@ -14,7 +17,9 @@ $(document).ready(function () {
             const data = await response.json();
             console.log("✅ API Data Received:", data);
 
-            updateTable(data); 
+            const oldStatuses = new Map(productStatusMap);
+            updateTable(data);
+            if (showAlert) checkAndQueueLowStock(data, oldStatuses);
         } catch (error) {
             console.error("❌ Error fetching inventory data:", error);
         }
@@ -22,7 +27,7 @@ $(document).ready(function () {
 
     function updateTable(data) {
         console.log("🔄 Updating table with fetched data...");
-        tableBody.empty(); 
+        tableBody.empty();
 
         if (data.length === 0) {
             console.warn("⚠️ No inventory items found!");
@@ -31,6 +36,7 @@ $(document).ready(function () {
         }
 
         data.forEach(item => {
+            let statusBadge;
             switch (item.status) {
                 case 3:
                     statusBadge = `<span class="badge bg-success">In-Stock</span>`;
@@ -47,7 +53,7 @@ $(document).ready(function () {
 
             let row = `
                 <tr data-id="${item.id}">
-                    <td>${item.name}</td> 
+                    <td>${item.name}</td>
                     <td>${item.quantity}</td>
                     <td>${item.threshold}</td>
                     <td>${statusBadge}</td>
@@ -57,12 +63,102 @@ $(document).ready(function () {
                     </td>
                 </tr>`;
             tableBody.append(row);
+
+            productStatusMap.set(item.id, item.status);
         });
 
         console.log("✅ Table Updated Successfully!");
     }
 
-    // ✅ Search Functionality
+    function checkAndQueueLowStock(data, oldStatuses) {
+        console.log("🔍 Checking for low-stock items...");
+        
+        data.forEach(product => {
+            const prevStatus = oldStatuses.get(product.id);
+            const isNowLowStock = product.status === 2 || product.status === 1;
+            const alertAlreadyTriggered = product.alert_triggered === true;
+    
+            console.log(`➡️ ${product.name} | Status: ${product.status} | Triggered: ${product.alert_triggered}`);
+    
+            // Skip products that are already triggered or not in low stock
+            if (!isNowLowStock || alertAlreadyTriggered) return;
+    
+            const wentFromHighToLow = (prevStatus === 3 || prevStatus === undefined) && isNowLowStock;
+    
+            if (!lowStockQueue.some(p => p.id === product.id) && (prevStatus !== product.status || wentFromHighToLow)) {
+                lowStockQueue.push(product);
+                console.log("🚨 Queued Low Stock:", product.name);
+            }
+    
+            productStatusMap.set(product.id, product.status);
+        });
+    
+        console.log("📋 Queue:", lowStockQueue.map(p => p.name));
+        if (!modalActive && lowStockQueue.length > 0) {
+            showNextAlert();
+        }
+    }
+
+    function showNextAlert() {
+        console.log("📣 Running showNextAlert() — Queue length:", lowStockQueue.length);
+    
+        if (lowStockQueue.length === 0) {
+            modalActive = false;
+            return;
+        }
+    
+        modalActive = true;
+        const product = lowStockQueue.shift();
+    
+        const content = `
+            <strong>${product.name}</strong><br>
+            Quantity: ${product.quantity}<br>
+            Threshold: ${product.threshold}<br>
+            <small>Status: ${product.status === 1 ? "Out of Stock" : "Low Stock"}</small>
+        `;
+        $("#notificationContent").html(content);
+    
+        const modal = new bootstrap.Modal(document.getElementById("notificationModal"));
+        modal.show();
+    
+        console.log("🟡 Modal shown for:", product.name, "| ID:", product.id);
+    
+        $("#markViewedBtn").off("click").on("click", function () {
+            console.log("🟢 Mark Viewed clicked for:", product.id);
+            markAsViewed(product.id);
+            modal.hide();
+            setTimeout(() => {
+                modalActive = false;
+                showNextAlert();
+            }, 500);
+        });
+    }
+
+    function markAsViewed(productId) {
+        console.log("📤 Attempting to mark product as viewed:", productId);  // DEBUG LINE
+    
+        fetch(`/api/v1/items/${productId}/mark_alert_viewed/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCSRFToken()
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Failed to mark product ${productId}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("✅ Marked as viewed:", data);  // DEBUG LINE
+        })
+        .catch(error => {
+            console.error("❌ Error marking as viewed:", error);
+        });
+    }
+    
+
     $("#searchInput").on("keyup", function () {
         let value = $(this).val().toLowerCase();
         $("#tableBody tr").each(function () {
@@ -71,7 +167,6 @@ $(document).ready(function () {
         });
     });
 
-    // ✅ Handle Add New Product
     $("#addEntry").click(async function () {
         let productName = $("#addProduct").val().trim();
         let productQuantity = parseInt($("#addQuantity").val());
@@ -93,14 +188,14 @@ $(document).ready(function () {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRFToken": getCSRFToken() 
+                    "X-CSRFToken": getCSRFToken()
                 },
                 body: JSON.stringify(newProduct)
             });
 
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
-            fetchInventoryData();
+            await fetchInventoryData(true);
             $("#addModal").modal("hide");
             $("#addForm")[0].reset();
             console.log("✅ Product Added Successfully!");
@@ -110,7 +205,6 @@ $(document).ready(function () {
         }
     });
 
-    // ✅ Handle Edit Product (Event Delegation)
     $(document).on("click", ".edit-btn", function () {
         let row = $(this).closest("tr");
         let productId = row.data("id");
@@ -126,7 +220,6 @@ $(document).ready(function () {
         $("#editModal").modal("show");
     });
 
-    // ✅ Handle Save Changes after Editing
     $("#saveChanges").click(async function () {
         let productId = $("#editRowIndex").val();
         let updatedName = $("#editProduct").val().trim();
@@ -144,19 +237,28 @@ $(document).ready(function () {
             threshold: updatedThreshold
         };
 
+        fetch(`${apiUrl}${productId}/`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCSRFToken()
+            },
+            body: JSON.stringify(updatedProduct)
+        });
+
         try {
             const response = await fetch(`${apiUrl}${productId}/`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRFToken": getCSRFToken() 
+                    "X-CSRFToken": getCSRFToken()
                 },
                 body: JSON.stringify(updatedProduct)
             });
 
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
-            fetchInventoryData();
+            await fetchInventoryData(true);
             $("#editModal").modal("hide");
             console.log("✅ Product Updated Successfully!");
         } catch (error) {
@@ -165,7 +267,6 @@ $(document).ready(function () {
         }
     });
 
-    // ✅ Handle Delete Product (Event Delegation)
     $(document).on("click", ".delete-btn", async function () {
         let row = $(this).closest("tr");
         let productId = row.data("id");
@@ -182,7 +283,7 @@ $(document).ready(function () {
 
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
-            fetchInventoryData();
+            await fetchInventoryData(true);
             console.log("✅ Product Deleted Successfully!");
         } catch (error) {
             console.error("❌ Error deleting product:", error);
@@ -190,7 +291,6 @@ $(document).ready(function () {
         }
     });
 
-    // ✅ Function to Get CSRF Token (Required for Django)
     function getCSRFToken() {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -206,8 +306,8 @@ $(document).ready(function () {
         return cookieValue;
     }
 
-    // ✅ Load inventory data on page load
-    fetchInventoryData();
+    fetchInventoryData(true);
+    setInterval(() => fetchInventoryData(true), 15000);
 });
 document.addEventListener("DOMContentLoaded", function () {
     const statusFilter = document.getElementById("statusFilter");
