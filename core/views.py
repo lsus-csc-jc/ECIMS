@@ -196,35 +196,28 @@ def mark_alert_viewed(request, item_id):
 @csrf_exempt
 @require_http_methods(["PUT"])
 def update_inventory_item(request, item_id):
-    print("⚙️ PUT request received to update inventory item")
-
     try:
+        # Retrieve the item
         item = InventoryItem.objects.get(id=item_id)
+
+        # Parse the incoming data from the request body
         data = json.loads(request.body)
 
-        # Store previous quantity and threshold for comparison (optional debug)
-        previous_quantity = item.quantity
-        previous_threshold = item.threshold
-
-        # Update fields
+        # Update fields (only if provided in the request body)
         item.name = data.get("name", item.name)
         item.quantity = int(data.get("quantity", item.quantity))
         item.threshold = int(data.get("threshold", item.threshold))
 
-        print(f"🔄 Prev: qty={previous_quantity}, th={previous_threshold}")
-        print(f"✅ New: qty={item.quantity}, th={item.threshold}")
-
-        # ✅ Core logic to reset alert
-        if item.quantity >= item.threshold:
+        # Check if the quantity has changed and adjust alert status accordingly
+        if item.quantity < item.threshold:
+            if not item.alert_triggered:
+                item.alert_triggered = True
+        else:
             if item.alert_triggered:
                 item.alert_triggered = False
-                print("🟢 alert_triggered reset to False")
-        else:
-            print("🟡 Still below threshold, keeping alert_triggered:", item.alert_triggered)
 
+        # Save the changes
         item.save()
-
-        print("💾 Final saved alert_triggered:", item.alert_triggered)
 
         return JsonResponse({
             "success": True,
@@ -241,7 +234,6 @@ def update_inventory_item(request, item_id):
     except InventoryItem.DoesNotExist:
         return JsonResponse({"error": "Item not found"}, status=404)
     except Exception as e:
-        print(f"❌ Error updating item: {e}")
         return JsonResponse({"error": str(e)}, status=500)
 
 @login_required
