@@ -209,3 +209,37 @@ $(document).ready(function () {
     // ✅ Load inventory data on page load
     fetchInventoryData();
 });
+document.addEventListener("DOMContentLoaded", function () {
+    const statusFilter = document.getElementById("statusFilter");
+    const tableBody = document.getElementById("tableBody");
+
+    statusFilter.addEventListener("change", function () {
+        const selectedStatus = statusFilter.value;
+        const rows = tableBody.querySelectorAll("tr");
+
+        rows.forEach(row => {
+            const statusCell = row.querySelector("td:nth-child(4)");
+            const statusText = statusCell?.textContent.trim();
+
+            const showRow = selectedStatus === "" || statusText === selectedStatus;
+            row.style.display = showRow ? "" : "none";
+        });
+    });
+});
+document.addEventListener("DOMContentLoaded", function () {
+    const statusFilter = document.getElementById("statusFilter");
+    const tableBody = document.getElementById("tableBody");
+
+    statusFilter.addEventListener("change", function () {
+        const selectedStatus = statusFilter.value;
+        const rows = tableBody.querySelectorAll("tr");
+
+        rows.forEach(row => {
+            const statusCell = row.querySelector("td:nth-child(4)");
+            const statusText = statusCell?.textContent.trim();
+
+            const showRow = selectedStatus === "" || statusText === selectedStatus;
+            row.style.display = showRow ? "" : "none";
+        });
+    });
+});
