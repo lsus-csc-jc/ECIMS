@@ -47,6 +47,7 @@ def signup_page(request):
         form = SignUpForm()
     return render(request, 'signup.html', {'form': form})
 
+
 def save_order(request):
     if request.method == 'POST':
         try:
@@ -54,23 +55,25 @@ def save_order(request):
 
             product = data.get('product')
             quantity = data.get('quantity')
-            supplier_name = data.get('supplier')
+            supplier_id = data.get('supplier')  # Expecting supplier ID from the dropdown
             expected_delivery = data.get('expectedDelivery')
             form_status = data.get('status')
 
-            if not supplier_name:
-                return JsonResponse({'success': False, 'error': 'Supplier name is required.'}, status=400)
+            # Ensure a supplier is provided
+            if not supplier_id:
+                return JsonResponse({'success': False, 'error': 'Supplier is required.'}, status=400)
 
-            # Validate incoming status
+            # Attempt to get the supplier by ID
+            try:
+                supplier = Supplier.objects.get(id=supplier_id)
+            except Supplier.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Supplier not found.'}, status=404)
+
+            # Validate status (expecting uppercase statuses)
             valid_statuses = ['PENDING', 'COMPLETED', 'CANCELLED']
             order_status = form_status if form_status in valid_statuses else 'PENDING'
 
-            supplier, created = Supplier.objects.get_or_create(
-                name=supplier_name,
-                defaults={'contact_email': 'unknown@example.com'}
-            )
-
-            # ✅ Prevent duplicate orders based on key fields
+            # Prevent duplicate orders based on key fields.
             duplicate_order = Order.objects.filter(
                 product=product,
                 quantity=quantity,
@@ -82,10 +85,10 @@ def save_order(request):
             if duplicate_order:
                 return JsonResponse({'success': False, 'error': 'Duplicate order already exists.'}, status=409)
 
-            # Generate unique order number
+            # Generate unique order number.
             order_number = str(uuid.uuid4())[:8]
 
-            # ✅ Create new order
+            # Create the new order.
             order = Order.objects.create(
                 order_number=order_number,
                 supplier=supplier,
@@ -95,12 +98,22 @@ def save_order(request):
                 expected_delivery=expected_delivery
             )
 
-            return JsonResponse({'success': True, 'message': 'Order saved successfully'})
+            # Query for an updated supplier list.
+            suppliers = list(Supplier.objects.all().values('id', 'name'))
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Order saved successfully',
+                'suppliers': suppliers  # Updated supplier list added here.
+            })
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
     return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
 
+def get_suppliers(request):
+    suppliers = Supplier.objects.all().values('id', 'name')
+    return JsonResponse({'suppliers': list(suppliers)})
 
 
 @csrf_exempt

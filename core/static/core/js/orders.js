@@ -16,73 +16,126 @@ function getCookie(name) {
     return cookieValue;
 }
 
-function filterOrders() {
-    const searchQuery = document.getElementById("searchInput").value.toLowerCase();
-    const statusFilter = document.getElementById("statusFilter").value.toLowerCase().trim();
-    const startDate = document.getElementById("startDate").value;
-    const endDate = document.getElementById("endDate").value;
-    const rows = document.querySelectorAll("tbody tr");
-
-    rows.forEach(row => {
-        // Column indices as defined in your table:
-        // 0: Order ID, 1: Supplier, 2: Date Created, 3: Delivery Date, 4: Status (select + button)
-        const orderNumber = row.cells[0].innerText.toLowerCase();
-        const supplier = row.cells[1].innerText.toLowerCase();
-
-        // Extract only the selected status text from the <select> element
-        const statusSelect = row.cells[4].querySelector("select[name='status']");
-        const statusText = statusSelect 
-            ? statusSelect.options[statusSelect.selectedIndex].textContent.trim().toLowerCase() 
-            : row.cells[4].innerText.trim().toLowerCase();
-
-        const dateText = row.cells[3].innerText.trim();  // e.g., "m/d/Y" or "N/A"
-
-        // Check for search match (order number or supplier)
-        const matchesSearch = orderNumber.includes(searchQuery) || supplier.includes(searchQuery);
-        // Check for status match (if filter is empty then allow, otherwise do an exact match)
-        const matchesStatus = (statusFilter === "" || statusText === statusFilter);
-        // Check date range match if dates provided and date is valid (not "N/A")
-        let matchesDate = true;
-        if (startDate && endDate && dateText !== "N/A") {
-            const parts = dateText.split("/");
-            // Convert m/d/Y to a Date object (note month is 0-indexed)
-            const orderDate = new Date(parts[2], parts[0] - 1, parts[1]);
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            matchesDate = (orderDate >= start && orderDate <= end);
-        }
-
-        // Show row only if all conditions match
-        row.style.display = (matchesSearch && matchesStatus && matchesDate) ? "" : "none";
-    });
+// Function: Update Supplier Dropdown
+function updateSupplierDropdown() {
+    console.log("updateSupplierDropdown called");
+    fetch("/get_suppliers/")
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Network response not ok");
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("Suppliers data:", data);
+            const supplierSelect = document.getElementById("supplier");
+            supplierSelect.innerHTML = ""; // Clear any existing options
+            data.suppliers.forEach(supplier => {
+                const option = document.createElement("option");
+                option.value = supplier.id;         // Use supplier id as value
+                option.textContent = supplier.name;   // Display supplier's name
+                supplierSelect.appendChild(option);
+            });
+        })
+        .catch(error => console.error("Error fetching suppliers:", error));
 }
 
-
-// Function to confirm closing the modal
-function confirmCloseModal() {
-    console.log("confirmCloseModal called");
-    if (confirm("Are you sure you want to close without saving?")) {
-        const modalElement = document.getElementById("newOrderModal");
-        let modal = bootstrap.Modal.getInstance(modalElement);
-        if (!modal) {
-            console.log("No existing modal instance found; creating a new one.");
-            modal = new bootstrap.Modal(modalElement);
+// Function: Toggle the details row for an order
+function toggleDetails(orderId) {
+    const detailsRow = document.getElementById('details-' + orderId);
+    if (detailsRow) {
+        if (detailsRow.style.display === 'none' || detailsRow.style.display === '') {
+            detailsRow.style.display = 'table-row';
+        } else {
+            detailsRow.style.display = 'none';
         }
-        modal.hide();
-        // Uncomment the following line if you want to redirect after closing:
-        // window.location.href = "orders.html";
+    } else {
+        console.error("No details row found for order ID:", orderId);
     }
 }
 
-// Attach event listeners once the DOM is ready
+// Function: Filter Orders
+function filterOrders() {
+    console.log("filterOrders() triggered");
+
+    // Get filter values from the UI
+    const searchQuery = document.getElementById("searchInput").value.toLowerCase();
+    const statusFilter = document.getElementById("statusFilter").value.toLowerCase().trim();
+    const startDateValue = document.getElementById("startDate").value;
+    const endDateValue = document.getElementById("endDate").value;
+    // Only select rows that are order summaries using the "order-row" class.
+    const rows = document.querySelectorAll("tbody tr.order-row");
+
+    console.log("Start Date Input:", startDateValue, "End Date Input:", endDateValue);
+    const startDate = startDateValue ? new Date(startDateValue) : null;
+    const endDate = endDateValue ? new Date(endDateValue) : null;
+    console.log("Parsed Start Date:", startDate, "Parsed End Date:", endDate);
+
+    rows.forEach((row, idx) => {
+        // Get values from cells
+        const orderNumber = row.cells[0].innerText.toLowerCase();
+        const supplierText = row.cells[1].innerText.toLowerCase();
+        const statusSelect = row.cells[4].querySelector("select[name='status']");
+        // Use select's current value for the status
+        const statusText = statusSelect ? statusSelect.value.toLowerCase().trim() : "";
+
+        console.log(`Row ${idx} status text: "${statusText}"`);
+
+        // Date Parsing (Assuming Delivery Date is at cell index 3)
+        const dateText = row.cells[3].innerText.trim();
+        let orderDate = null;
+        if (dateText !== "N/A") {
+            const parts = dateText.split("/");
+            if (parts.length === 3) {
+                orderDate = new Date(parts[2], parts[0] - 1, parts[1]);
+                console.log(`Row ${idx} parsed order date: ${orderDate} from ${dateText}`);
+            } else {
+                console.warn(`Row ${idx} unexpected date format: ${dateText}`);
+            }
+        } else {
+            console.log(`Row ${idx} date is N/A`);
+        }
+        
+        // Date Filtering
+        let matchesDate = true;
+        if (orderDate) {
+            if (startDate && endDate) {
+                matchesDate = (orderDate >= startDate && orderDate <= endDate);
+            } else if (startDate) {
+                matchesDate = (orderDate >= startDate);
+            } else if (endDate) {
+                matchesDate = (orderDate <= endDate);
+            }
+            console.log(`Row ${idx} date filtering: orderDate = ${orderDate}, matchesDate = ${matchesDate}`);
+        }
+        
+        // Other Filters
+        const matchesSearch = orderNumber.includes(searchQuery) || supplierText.includes(searchQuery);
+        const matchesStatus = (statusFilter === "" || statusText === statusFilter);
+        const finalMatch = (matchesSearch && matchesStatus && matchesDate);
+        console.log(`Row ${idx} final match: ${finalMatch}`);
+        
+        // Set the row visibility
+        row.style.display = finalMatch ? "" : "none";
+    });
+}
+
 document.addEventListener("DOMContentLoaded", function() {
+    // Populate the supplier dropdown on page load
+    updateSupplierDropdown();
+    
+    // Attach filter listeners
+    document.getElementById("searchInput").addEventListener("input", filterOrders);
+    document.getElementById("statusFilter").addEventListener("change", filterOrders);
+    document.getElementById("startDate").addEventListener("change", filterOrders);
+    document.getElementById("endDate").addEventListener("change", filterOrders);
+
     // New Order: Submit Order Form
     const orderForm = document.getElementById("orderForm");
     if (orderForm) {
         orderForm.addEventListener("submit", function(event) {
             event.preventDefault();
 
-            // Collect new order data from form fields
             const orderData = {
                 product: document.getElementById("product").value,
                 quantity: document.getElementById("quantity").value,
@@ -105,14 +158,27 @@ document.addEventListener("DOMContentLoaded", function() {
                 console.log("Save Order Response:", data);
                 if (data.success) {
                     alert("Order saved successfully!");
-                    // Hide the modal after saving the order
+
+                    // Update the supplier dropdown if the response includes an updated list.
+                    if (data.suppliers) {
+                        const supplierSelect = document.getElementById("supplier");
+                        supplierSelect.innerHTML = "";
+                        data.suppliers.forEach(supplier => {
+                            const option = document.createElement("option");
+                            option.value = supplier.id;
+                            option.textContent = supplier.name;
+                            supplierSelect.appendChild(option);
+                        });
+                    }
+                    
+                    // Hide the modal after saving the order.
                     const modalElement = document.getElementById("newOrderModal");
                     let modal = bootstrap.Modal.getInstance(modalElement);
                     if (!modal) {
                         modal = new bootstrap.Modal(modalElement);
                     }
                     modal.hide();
-                    // Optionally, refresh or update the orders list here
+                    // Optionally, refresh/update the orders list here.
                 } else {
                     alert("Error saving order: " + data.error);
                 }
@@ -140,20 +206,14 @@ document.addEventListener("DOMContentLoaded", function() {
     const updateButtons = document.querySelectorAll(".update-order-btn");
     updateButtons.forEach(button => {
         button.addEventListener("click", function(event) {
-            console.log("Update Order button clicked"); // Debug log
+            console.log("Update Order button clicked");
             event.preventDefault();
             const orderId = this.dataset.orderId;
-            // Find the select element in the same row
             const row = this.closest("tr");
             const statusSelect = row.querySelector("select[name='status']");
             const newStatus = statusSelect.value;
+            const payload = { status: newStatus };
 
-            // Prepare the payload for update
-            const payload = {
-                status: newStatus
-            };
-
-            // Make the AJAX call to update order status
             fetch(`/update_order/${orderId}/`, {
                 method: 'POST',
                 headers: {
