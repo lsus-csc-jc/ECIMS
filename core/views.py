@@ -209,12 +209,13 @@ def update_inventory_item(request, item_id):
         item.threshold = int(data.get("threshold", item.threshold))
 
         # Check if the quantity has changed and adjust alert status accordingly
-        if item.quantity < item.threshold:
-            if not item.alert_triggered:
-                item.alert_triggered = True
-        else:
-            if item.alert_triggered:
-                item.alert_triggered = False
+        #if item.quantity < item.threshold:
+            #if not item.alert_triggered:
+                #item.alert_triggered = True
+        #else:
+        if item.quantity >= item.threshold:
+            #if item.alert_triggered:
+            item.alert_triggered = False
 
         # Save the changes
         item.save()

@@ -261,7 +261,7 @@ $(document).ready(function () {
         };
 
         try {
-            const response = await fetch(`${apiUrl}${productId}/`, {
+            const response = await fetch(`${apiUrl}${productId}/update_item`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",

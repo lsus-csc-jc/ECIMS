@@ -20,7 +20,7 @@ urlpatterns = [
     path('reset_user_password/<int:user_id>/', reset_user_password, name='reset_user_password'),
     path('delete_user/<int:user_id>/', delete_user, name='delete_user'),
     path('edit_user/<int:user_id>/', edit_user, name='edit_user'),
-    path('api/v1/items/<int:item_id>/', update_inventory_item, name='update_inventory_item'),
+    path('api/v1/items/<int:item_id>/update_item', update_inventory_item, name='update_inventory_item'),
     path('api/v1/items/<int:item_id>/mark_alert_viewed/', mark_alert_viewed, name='mark_alert_viewed'),
 
 ]
