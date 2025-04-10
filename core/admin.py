@@ -15,11 +15,11 @@ class InventoryItemAdmin(admin.ModelAdmin):
 
 # Customize Order admin to display order information
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('order_number', 'supplier', 'status', 'total_amount', 'date_ordered')
+    list_display = ('order_number', 'supplier', 'status', 'date_ordered', 'expected_delivery')
 
 # Customize OrderItem admin to display order item details
 class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ('order', 'inventory_item', 'quantity', 'price')
+    list_display = ('order', 'product_name', 'quantity')
 
 admin.site.register(Profile, ProfileAdmin)
 admin.site.register(Supplier, SupplierAdmin)

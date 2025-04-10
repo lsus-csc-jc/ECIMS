@@ -1,5 +1,12 @@
 from django.urls import path
-from .views import login_page, signup_page, dashboard_view, invmanagement_view, orders_view, save_order, suppliers_view, reports_view, settings_view, logout_view, add_inventory_item, delete_inventory_item, add_user, profile_list, reset_password, delete_user, edit_user, update_user, update_order, get_suppliers 
+from .views import (
+    login_page, signup_page, dashboard_view, invmanagement_view, orders_view, 
+    save_order, suppliers_view, reports_view, settings_view, logout_view, 
+    add_inventory_item, delete_inventory_item, add_user, profile_list, 
+    reset_password, delete_user, edit_user, update_user, update_order, 
+    get_suppliers, delete_order, 
+    bulk_delete_orders, bulk_update_order_status
+)
 
 urlpatterns = [
     path('', dashboard_view, name='home'),  # This handles the root URL "/"
@@ -23,5 +30,7 @@ urlpatterns = [
     path('update-user/<int:user_id>/', update_user, name='update_user'),
     path('update_order/<int:order_id>/', update_order, name='update_order'),
     path('get_suppliers/', get_suppliers, name='get_suppliers'),
-
+    path('delete_order/<int:order_id>/', delete_order, name='delete_order'),
+    path('orders/bulk_delete/', bulk_delete_orders, name='bulk_delete_orders'),
+    path('orders/bulk_update_status/', bulk_update_order_status, name='bulk_update_order_status'),
 ]

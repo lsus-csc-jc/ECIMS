@@ -43,7 +43,7 @@
       <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5z"/>
     </symbol>
     <symbol id="gear-wide-connected" viewBox="0 0 16 16">
-      <path d="M7.068.727c.243-.97 1.62-.97 1.864 0l.071.286a.96.96 0 0 0 1.622.434l.205-.211c.695-.719 1.888-.03 1.613.931l-.08.284a.96.96 0 0 0 1.187 1.187l.283-.081c.96-.275 1.65.918.931 1.613l-.211.205a.96.96 0 0 0 .434 1.622l.286.071c.97.243.97 1.62 0 1.864l-.286.071a.96.96 0 0 0-.434 1.622l.211.205c.719.695.03 1.888-.931 1.613l-.284-.08a.96.96 0 0 0-1.187 1.187l.081.283c.275.96-.918 1.65-1.613.931l-.205-.211a.96.96 0 0 0-1.622.434l-.071.286c-.243.97-1.62.97-1.864 0l-.071-.286a.96.96 0 0 0-1.622-.434l-.205.211c-.695.719-1.888.03-1.613-.931l.08-.284a.96.96 0 0 0-1.186-1.187l-.284.081c-.96.275-1.65-.918-.931-1.613l.211-.205a.96.96 0 0 0-.434-1.622l-.286-.071c-.97-.243-.97-1.62 0-1.864l.286-.071a.96.96 0 0 0 .434-1.622l-.211-.205c-.719-.695-.03-1.888.931-1.613l.284.08a.96.96 0 0 0 1.187-1.186l-.081-.284c-.275-.96.918-1.65 1.613-.931l.205.211a.96.96 0 0 0 1.622-.434l.071-.286zM12.973 8.5H8.25l-2.834 3.779A4.998 4.998 0 0 0 12.973 8.5zm0-1a4.998 4.998 0 0 0-7.557-3.779l2.834 3.78h4.723zM5.048 3.967c-.03.021-.058.043-.087.065l.087-.065zm-.431.355A4.984 4.984 0 0 0 3.002 8c0 1.455.622 2.765 1.615 3.678L7.375 8 4.617 4.322zm.344 7.646.087.065-.087-.065z"/>
+      <path d="M7.068.727c.243-.97 1.62-.97 1.864 0l.071.286a.96.96 0 0 0 1.622.434l.205-.211c.695-.719 1.888-.03 1.613.931l-.08.284a.96.96 0 0 0 1.187 1.187l.283-.081c.96-.275 1.65.918.931 1.613l-.211.205a.96.96 0 0 0-.434 1.622l.286.071c.97.243.97 1.62 0 1.864l-.286.071a.96.96 0 0 0-.434 1.622l.211.205c.719.695.03 1.888-.931 1.613l-.284-.08a.96.96 0 0 0-1.187 1.187l.081.283c.275.96-.918 1.65-1.613.931l-.205-.211a.96.96 0 0 0-1.622.434l-.071.286c-.243.97-1.62.97-1.864 0l-.071-.286a.96.96 0 0 0-1.622-.434l-.205.211c-.695.719-1.888.03-1.613-.931l.08-.284a.96.96 0 0 0-1.186-1.187l-.284.081c-.96.275-1.65-.918-.931-1.613l.211-.205a.96.96 0 0 0-.434-1.622l-.286-.071c-.97-.243-.97-1.62 0-1.864l.286-.071a.96.96 0 0 0 .434-1.622l-.211-.205c-.719-.695-.03-1.888.931-1.613l.284.08a.96.96 0 0 0 1.187-1.186l-.081-.284c-.275-.96.918-1.65 1.613-.931l.205.211a.96.96 0 0 0 1.622-.434l.071-.286zM12.973 8.5H8.25l-2.834 3.779A4.998 4.998 0 0 0 12.973 8.5zm0-1a4.998 4.998 0 0 0-7.557-3.779l2.834 3.78h4.723zM5.048 4.467c-.03.021-.058.043-.087.065l.087-.065zm-.431.355A4.984 4.984 0 0 0 3.002 8c0 1.455.622 2.765 1.615 3.678L7.375 8 4.617 4.322zm.344 7.646.087.065-.087-.065z"/>
     </symbol>
     <symbol id="graph-up" viewBox="0 0 16 16">
       <path fill-rule="evenodd" d="M0 0h1v15h15v1H0V0Zm14.817 3.113a.5.5 0 0 1 .07.704l-4.5 5.5a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61 4.15-5.073a.5.5 0 0 1 .704-.07Z"/>
@@ -223,60 +223,92 @@
                                     </button>
                                 </div>
                             </div>
-    
+
+                            <!-- START: Bulk Actions Row -->
+                            <div class="row g-3 align-items-center mb-3 pt-2 border-top">
+                                <div class="col-auto">
+                                    <label class="form-label fw-bold">Bulk Actions:</label>
+                                </div>
+                                <div class="col-auto">
+                                    <button type="button" id="bulkDeleteBtn" class="btn btn-danger btn-sm">Delete Selected</button>
+                                </div>
+                                <div class="col-auto">
+                                    <select id="bulkStatusUpdateSelect" class="form-select form-select-sm" style="width: auto;">
+                                        <option value="" selected disabled>Change Status to...</option>
+                                        <option value="PENDING">Pending</option>
+                                        <option value="COMPLETED">Completed</option>
+                                        <option value="CANCELLED">Cancelled</option>
+                                    </select>
+                                </div>
+                                <div class="col-auto">
+                                    <button type="button" id="bulkUpdateStatusBtn" class="btn btn-warning btn-sm">Update Selected Status</button>
+                                </div>
+                            </div>
+                            <!-- END: Bulk Actions Row -->
+
                    <!-- Table Section -->
                    <div class="table-responsive">
                     <table class="table table-striped">
                         <thead>
                             <tr>
+                                <th><input type="checkbox" id="selectAllOrders" title="Select All"></th> <!-- Checkbox Header -->
                                 <th>Order ID</th>
                                 <th>Supplier</th>
                                 <th>Date Created</th>
                                 <th>Delivery Date</th>
-                                <th>Status</th>
-                                <th></th> <!-- Plus sign column -->
+                                <th>Status & Actions</th> <!-- Combined Header -->
+                                <th>Details</th> <!-- Renamed Header -->
                             </tr>
                         </thead>
                         <tbody>
                             {% for order in orders %}
-<tr class="order-row">
+{# Concatenate product names into a searchable string #}
+{% with product_names=order.items.all|join:", "|lower %}
+<tr class="order-row" data-products="{{ product_names }}"> <!-- Added data-products -->
+    <td><input type="checkbox" class="form-check-input order-checkbox" value="{{ order.id }}"></td> 
     <td>{{ order.order_number }}</td>
     <td>{{ order.supplier.name }}</td>
-    <td>{{ order.date_ordered|date:"m/d/Y" }}</td>
+    <td>{{ order.date_ordered|date:"m/d/Y" }}</td> <!-- This is cell index 3 now -->
     <td>
         {% if order.expected_delivery %}
-            {{ order.expected_delivery|date:"m/d/Y" }}
+            {{ order.expected_delivery|date:"m/d/Y" }} <!-- This is cell index 4 now -->
         {% else %}
             N/A
         {% endif %}
     </td>
-    <td>
-        <select name="status" class="form-select">
-            <option value="PENDING" {% if order.status == "PENDING" %}selected{% endif %}>Pending</option>
-            <option value="COMPLETED" {% if order.status == "COMPLETED" %}selected{% endif %}>Completed</option>
-            <option value="CANCELLED" {% if order.status == "CANCELLED" %}selected{% endif %}>Cancelled</option>
-        </select>
-        <button type="button" id="updateOrderBtn-{{ order.id }}" class="btn btn-success update-order-btn" data-order-id="{{ order.id }}">Update Order</button>
+    <td> <!-- Status and Actions Column - This is cell index 5 now -->
+        <div class="input-group input-group-sm"> 
+          <select name="status" class="form-select">
+              <option value="PENDING" {% if order.status == "PENDING" %}selected{% endif %}>Pending</option>
+              <option value="COMPLETED" {% if order.status == "COMPLETED" %}selected{% endif %}>Completed</option>
+              <option value="CANCELLED" {% if order.status == "CANCELLED" %}selected{% endif %}>Cancelled</option>
+          </select>
+        </div>
     </td>
-    <td>
-        <button type="button" class="btn btn-primary" onclick="toggleDetails('{{ order.id }}')">+</button>
+    <td> <!-- Details Toggle Column - This is cell index 6 now -->
+        <button type="button" class="btn btn-primary btn-sm" onclick="toggleDetails('{{ order.id }}')">+</button> 
     </td>
 </tr>
-<tr id="details-{{ order.id }}" style="display: none;">
-    <td colspan="7">
-        <div class="d-flex align-items-center">
-            <div class="me-3">
-                <strong>Product:</strong> {{ order.product }}
-            </div>
-            <div>
-                <strong>Quantity:</strong> {{ order.quantity }}
-            </div>
+{% endwith %}
+<tr id="details-{{ order.id }}" style="display: none;" class="order-details-row">
+    <td colspan="7"> <!-- *** Adjusted colspan back to 7 to account for checkbox *** -->
+        <div class="p-2" style="background-color: #f8f9fa;">
+            <strong>Order Items:</strong>
+            {% if order.items.all %}
+                <ul class="list-unstyled mt-1 mb-0">
+                    {% for item in order.items.all %}
+                        <li>{{ item.quantity }} x {{ item.product_name }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="fst-italic mb-0">No items found for this order.</p>
+            {% endif %}
         </div>
     </td>
 </tr>
 {% empty %}
 <tr>
-    <td colspan="7">No orders found.</td>
+    <td colspan="7">No orders found.</td> <!-- *** Adjusted colspan back to 7 *** -->
 </tr>
 {% endfor %}
 
@@ -295,36 +327,42 @@
                 </div>
                 <div class="modal-body">
                     <form id="orderForm">
-                        <div class="mb-3">
-                            <label for="product" class="form-label">Product</label>
-                            <input type="text" class="form-control" id="product" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="quantity" class="form-label">Quantity</label>
-                            <input type="number" class="form-control" id="quantity" min="1" required>
-                        </div>
+                        {% csrf_token %}
                         <div class="mb-3">
                             <label for="supplier" class="form-label">Supplier</label>
-                            <select class="form-control" id="supplier" name="supplier">
-                                <!-- Options will be dynamically populated -->
+                            <select class="form-select" id="supplier" name="supplier" required>
+                                <!-- Options dynamically populated by JS -->
                             </select>
                         </div>                        
                         <div class="mb-3">
                             <label for="expectedDelivery" class="form-label">Expected Delivery Date</label>
                             <input type="date" class="form-control" id="expectedDelivery" required>
                         </div>
-                        <div class="mb-3">
-                            <label for="status" class="form-label">Status</label>
-                            <select class="form-control" id="status">
-                                <option value="PENDING">Pending</option>
-                                <option value="COMPLETED">Delivered</option>
-                                <option value="CANCELLED">Cancelled</option>
-                            </select>
-                            
-                            </select>
+                        
+                        <hr>
+                        <h6>Order Items</h6>
+                        <div id="orderItemsContainer">
+                            <!-- Initial Item Row -->
+                            <div class="row g-2 mb-2 order-item-row">
+                                <div class="col-md-7">
+                                    <input type="text" class="form-control product-name" placeholder="Product Name" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="number" class="form-control quantity" placeholder="Qty" min="1" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-danger btn-sm w-100 remove-item-btn" disabled>Remove</button> <!-- Initially disabled -->
+                                </div>
+                            </div>
+                            <!-- More items added here by JS -->
                         </div>
-                        <button type="submit" class="btn btn-success">Add Order</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" id="addItemBtn" class="btn btn-outline-secondary btn-sm mb-3">+ Add Another Item</button>
+                        
+                        <hr>
+                        <div class="text-end">
+                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-success">Save Order</button>
+                        </div>
                     </form>
                 </div>
             </div>

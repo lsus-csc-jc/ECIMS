@@ -2,24 +2,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // Get references to key DOM elements
     const addUserForm = document.getElementById("addUserForm");
     const tableBody = document.getElementById("userTableBody");
-    const resetButtons = document.querySelectorAll(".reset-password-btn");
-    const targetUserIdField = document.getElementById("targetUserId");
-    const modalUserName = document.getElementById("modalUserName");
-  
-    // --- Reset Password Modal Handling ---
-    // When a reset button is clicked, update the hidden input and modal title
-    resetButtons.forEach(button => {
-      button.addEventListener("click", function () {
-        const userId = this.getAttribute("data-user-id");
-        const userName = this.getAttribute("data-user-name");
-        if (targetUserIdField) {
-          targetUserIdField.value = userId;
-        }
-        if (modalUserName) {
-          modalUserName.textContent = userName;
-        }
-      });
-    });
   
     if (!tableBody) {
       console.error("userTableBody not found.");
@@ -91,13 +73,6 @@ document.addEventListener("DOMContentLoaded", function () {
         <td class="user-email">${email}</td>
         <td class="user-role">${role}</td>
         <td>
-          <button class="btn btn-sm btn-warning reset-password-btn" 
-            data-bs-toggle="modal" data-bs-target="#resetPasswordModal" 
-            data-user-id="${userId}" data-user-name="${name}">
-            Reset Password
-          </button>
-        </td>
-        <td>
           <button class="btn btn-warning btn-sm edit-user">Edit</button>
           <button class="btn btn-danger btn-sm remove-user">Remove</button>
         </td>
@@ -107,16 +82,6 @@ document.addEventListener("DOMContentLoaded", function () {
       // Attach event listeners to the newly added buttons
       newRow.querySelector(".edit-user").addEventListener("click", () => editUser(newRow));
       newRow.querySelector(".remove-user").addEventListener("click", () => removeUser(newRow));
-      newRow.querySelector(".reset-password-btn").addEventListener("click", function () {
-        const userId = this.getAttribute("data-user-id");
-        const userName = this.getAttribute("data-user-name");
-        if (targetUserIdField) {
-          targetUserIdField.value = userId;
-        }
-        if (modalUserName) {
-          modalUserName.textContent = userName;
-        }
-      });
     }
   
     // --- Edit User Functionality ---
@@ -204,36 +169,6 @@ document.addEventListener("DOMContentLoaded", function () {
         // Optionally, add an AJAX call to remove the user from the server.
         row.remove();
       }
-    }
-  
-    // --- Password Toggle for Reset Password Modal ---
-    const toggleNewPassword = document.getElementById("toggleNewPassword");
-    const toggleConfirmPassword = document.getElementById("toggleConfirmPassword");
-  
-    if (toggleNewPassword) {
-      toggleNewPassword.addEventListener("click", function () {
-        const passwordInput = document.getElementById("new_password_modal");
-        if (passwordInput.type === "password") {
-          passwordInput.type = "text";
-          this.innerHTML = `<i class="bi bi-eye-slash"></i>`;
-        } else {
-          passwordInput.type = "password";
-          this.innerHTML = `<i class="bi bi-eye"></i>`;
-        }
-      });
-    }
-  
-    if (toggleConfirmPassword) {
-      toggleConfirmPassword.addEventListener("click", function () {
-        const passwordInput = document.getElementById("confirm_password_modal");
-        if (passwordInput.type === "password") {
-          passwordInput.type = "text";
-          this.innerHTML = `<i class="bi bi-eye-slash"></i>`;
-        } else {
-          passwordInput.type = "password";
-          this.innerHTML = `<i class="bi bi-eye"></i>`;
-        }
-      });
     }
   });
   

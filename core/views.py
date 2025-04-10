@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth import login, logout, get_user_model
+from django.contrib.auth import login, logout, get_user_model, update_session_auth_hash
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -14,8 +14,12 @@ from .decorators import allowed_roles
 from .roles import ROLE_SETTINGS_ACCESS, ROLE_INVENTORY_ACCESS, ROLE_ORDERS_ACCESS
 from django.http import JsonResponse
 from .forms import SignUpForm  # Import the fixed signup form
-from .models import Order, Supplier, Profile, InventoryItem
+from .models import Order, Supplier, Profile, InventoryItem, OrderItem
+import logging
+from django.db import transaction, IntegrityError
 
+# Get an instance of a logger
+# logger = logging.getLogger(__name__) # Removing logger for simplification
 
 User = get_user_model()
 
@@ -52,62 +56,83 @@ def save_order(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-
-            product = data.get('product')
-            quantity = data.get('quantity')
-            supplier_id = data.get('supplier')  # Expecting supplier ID from the dropdown
+            
+            supplier_id = data.get('supplier')
             expected_delivery = data.get('expectedDelivery')
-            form_status = data.get('status')
+            items_data = data.get('items') # Expecting a list of items
 
-            # Ensure a supplier is provided
+            # --- Basic Validation --- 
             if not supplier_id:
                 return JsonResponse({'success': False, 'error': 'Supplier is required.'}, status=400)
+            if not items_data or not isinstance(items_data, list) or len(items_data) == 0:
+                 return JsonResponse({'success': False, 'error': 'Order must contain at least one item.'}, status=400)
 
-            # Attempt to get the supplier by ID
+            # --- Get Supplier --- 
             try:
                 supplier = Supplier.objects.get(id=supplier_id)
             except Supplier.DoesNotExist:
                 return JsonResponse({'success': False, 'error': 'Supplier not found.'}, status=404)
+            
+            # --- Generate Order Number --- 
+            order_number = str(uuid.uuid4())[:8] # Consider making this check for uniqueness in a loop if collisions are likely
 
-            # Validate status (expecting uppercase statuses)
-            valid_statuses = ['PENDING', 'COMPLETED', 'CANCELLED']
-            order_status = form_status if form_status in valid_statuses else 'PENDING'
-
-            # Prevent duplicate orders based on key fields.
-            duplicate_order = Order.objects.filter(
-                product=product,
-                quantity=quantity,
-                supplier=supplier,
-                expected_delivery=expected_delivery,
-                status=order_status
-            ).first()
-
-            if duplicate_order:
-                return JsonResponse({'success': False, 'error': 'Duplicate order already exists.'}, status=409)
-
-            # Generate unique order number.
-            order_number = str(uuid.uuid4())[:8]
-
-            # Create the new order.
+            # --- Create the Main Order --- 
+            # Status defaults to PENDING as defined in the model
             order = Order.objects.create(
                 order_number=order_number,
                 supplier=supplier,
-                status=order_status,
-                product=product,
-                quantity=quantity,
-                expected_delivery=expected_delivery
+                expected_delivery=expected_delivery 
+                # Removed product, quantity. Status defaults to PENDING.
             )
 
-            # Query for an updated supplier list.
+            # --- Create Order Items --- 
+            order_items_to_create = []
+            for item_data in items_data:
+                product_name = item_data.get('product_name')
+                quantity_str = item_data.get('quantity')
+                
+                # Validate item data
+                if not product_name:
+                    # If an item is invalid, we should ideally roll back the order creation or handle it.
+                    # For simplicity now, we'll return an error, but this leaves an empty order behind.
+                    # A database transaction would be better here in a production scenario.
+                     return JsonResponse({'success': False, 'error': 'All items must have a product name.'}, status=400)
+                try:
+                    quantity = int(quantity_str)
+                    if quantity <= 0:
+                        raise ValueError("Quantity must be positive")
+                except (ValueError, TypeError):
+                    return JsonResponse({'success': False, 'error': f'Invalid quantity for product "{product_name}". Must be a positive whole number.'}, status=400)
+
+                # Add valid item to list for bulk creation
+                order_items_to_create.append(
+                    OrderItem(order=order, product_name=product_name, quantity=quantity)
+                )
+            
+            # Create all items in one go if the list is not empty
+            if order_items_to_create:
+                OrderItem.objects.bulk_create(order_items_to_create)
+            else:
+                # This case should ideally be caught earlier, but as a safeguard:
+                order.delete() # Clean up the empty order if no valid items were processed
+                return JsonResponse({'success': False, 'error': 'No valid items found in the order.'}, status=400)
+
+            # Query for an updated supplier list (optional, might not be needed anymore)
             suppliers = list(Supplier.objects.all().values('id', 'name'))
 
             return JsonResponse({
                 'success': True,
                 'message': 'Order saved successfully',
-                'suppliers': suppliers  # Updated supplier list added here.
+                'order_id': order.id, # Optionally return the new order ID
+                'suppliers': suppliers 
             })
+        
+        except json.JSONDecodeError:
+             return JsonResponse({'success': False, 'error': 'Invalid JSON format.'}, status=400)
         except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+            # Log the exception in a real application
+            # logger.exception("Error saving order:") 
+            return JsonResponse({'success': False, 'error': f'An unexpected error occurred: {str(e)}'}, status=500)
 
     return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
 
@@ -125,26 +150,51 @@ def update_order(request, order_id):
             order = Order.objects.get(id=order_id)
         except Order.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Order not found'}, status=404)
+        except json.JSONDecodeError:
+             return JsonResponse({'success': False, 'error': 'Invalid JSON format.'}, status=400)
         except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+            # logger.exception(f"Error fetching order {order_id} for update:")
+            return JsonResponse({'success': False, 'error': f'Error processing request: {str(e)}'}, status=500)
+        
+        # Validate new status
+        valid_statuses = [s[0] for s in Order.ORDER_STATUS]
+        if new_status not in valid_statuses:
+            return JsonResponse({'success': False, 'error': f'Invalid status: {new_status}'}, status=400)
 
-        # Store previous status to check the transition
         previous_status = order.status
         order.status = new_status
         order.save()
 
-        # If status changed from 'PENDING' to 'COMPLETED', update the inventory
+        # --- Update Inventory on Completion --- 
         if previous_status == 'PENDING' and new_status == 'COMPLETED':
-            # Assume order.product is the product name that matches InventoryItem.name
-            inventory_item, created = InventoryItem.objects.get_or_create(
-                name=order.product,
-                defaults={'quantity': 0, 'description': '', 'threshold': 0}
-            )
-            inventory_item.quantity += order.quantity
-            inventory_item.save()  # This will recalculate the inventory status using save() method logic
+            try:
+                # Iterate over the items associated with this order
+                for item in order.items.all(): 
+                    # Find or create the inventory item based on the product name from the order item
+                    inventory_item, created = InventoryItem.objects.get_or_create(
+                        name=item.product_name, # Use product_name from OrderItem
+                        defaults={'quantity': 0, 'description': '', 'threshold': 0} # Sensible defaults if created
+                    )
+                    # Increment the inventory quantity
+                    inventory_item.quantity += item.quantity # Use quantity from OrderItem
+                    inventory_item.save() # This recalculates inventory status via the model's save() method
+                
+                # Optional: Log successful inventory update
+                # logger.info(f"Inventory updated successfully for completed order {order.order_number} (ID: {order_id})")
+
+            except Exception as e:
+                # Log the error
+                # logger.exception(f"Error updating inventory for completed order {order.order_number} (ID: {order_id}):")
+                # Inform the user, but the order status is already updated.
+                # Consider how to handle partial inventory update failures.
+                messages.warning(request, f"Order status updated to COMPLETED, but there was an issue updating inventory: {str(e)}")
+                # Return success=True because the order *status* was updated, but maybe add a warning message
+                return JsonResponse({'success': True, 'message': 'Order updated, but inventory update failed.'})
 
         return JsonResponse({'success': True, 'message': 'Order updated successfully'})
+
     return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
 @csrf_exempt
 @require_POST
 def add_user(request):
@@ -176,44 +226,62 @@ def add_user(request):
 
 
 
+@login_required # Ensure user is logged in
 def reset_password(request):
+    # --- Permission Check --- 
+    if not request.user.is_superuser:
+        messages.error(request, "You do not have permission to reset passwords.")
+        return redirect('settings')
+
     if request.method == "POST":
         new_password = request.POST.get('new_password', '').strip()
         confirm_password = request.POST.get('confirm_password', '').strip()
-        target_user_id = request.POST.get('target_user_id', None)
+        target_user_id = request.POST.get('target_user_id', None) # Keep this name for the hidden input
 
-        # Debugging: print POST data values
-        print("POST new_password:", new_password)
-        print("POST confirm_password:", confirm_password)
-        print("POST target_user_id:", target_user_id)
-
+        # --- Validation --- 
         if not target_user_id:
-            messages.error(request, "No user selected for password reset.")
-            return redirect('settings')  # adjust to your actual redirect
-
-        if new_password != confirm_password:
-            messages.error(request, "Passwords do not match. Please try again.")
+            messages.error(request, "User ID was missing. Cannot reset password.")
+            return redirect('settings')
+        try:
+            target_user_id = int(target_user_id)
+        except ValueError:
+            messages.error(request, "Invalid User ID format.")
             return redirect('settings')
 
         if not new_password:
             messages.error(request, "Password cannot be empty.")
             return redirect('settings')
 
-        try:
-            target_user = User.objects.get(pk=target_user_id)
-        except User.DoesNotExist:
-            messages.error(request, "User not found.")
+        if new_password != confirm_password:
+            messages.error(request, "Passwords do not match. Please try again.")
             return redirect('settings')
 
-        # Set the new password
-        target_user.set_password(new_password)
-        target_user.save()
+        # --- Action --- 
+        try:
+            target_user = User.objects.get(pk=target_user_id)
 
-        messages.success(request, f"Password for {target_user.username} successfully changed!")
-        return redirect('settings')
+            target_user.set_password(new_password)
+            target_user.save() 
 
-    # For GET requests or others, simply redirect.
+            # --- Update Session If Changing Own Password --- 
+            if request.user.pk == target_user.pk:
+                update_session_auth_hash(request, target_user) # Keeps the user logged in
+                messages.success(request, f"Your password has been successfully changed!")
+            else:
+                messages.success(request, f"Password for {target_user.username} successfully changed!")
+            
+            return redirect('settings')
+
+        except User.DoesNotExist:
+            messages.error(request, f"User with ID {target_user_id} not found.")
+            return redirect('settings')
+        except Exception as e:
+            messages.error(request, f"An unexpected error occurred: {str(e)}")
+            return redirect('settings')
+
+    # If not POST (e.g., GET request), just redirect back
     return redirect('settings')
+
 def delete_user(request, user_id):
     if request.method == 'POST':
         # Optional: check if the request.user is allowed to delete
@@ -346,3 +414,140 @@ def logout_view(request):
 def profile_list(request):
     profiles = Profile.objects.all().order_by('user__username')
     return render(request, 'profile_list.html', {'profiles': profiles})
+
+@login_required
+@require_POST # Ensure this view only accepts POST requests
+def delete_order(request, order_id):
+    # Optional: Add permission check here (e.g., only superusers/managers)
+    # if not request.user.is_superuser:
+    #     messages.error(request, "You don't have permission to delete orders.")
+    #     return redirect('orders')
+
+    order_to_delete = get_object_or_404(Order, pk=order_id)
+    order_number = order_to_delete.order_number # Get number for message before deleting
+    try:
+        order_to_delete.delete()
+        messages.success(request, f'Order {order_number} deleted successfully.')
+    except Exception as e:
+        messages.error(request, f'Error deleting order {order_number}: {str(e)}')
+        # Log the error in a real application
+        # logger.exception(f"Error deleting order {order_id}")
+        
+    return redirect('orders')
+
+@login_required
+@require_POST
+def bulk_delete_orders(request):
+    # Optional: Permission check
+    # if not request.user.is_superuser:
+    #     return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        order_ids = data.get('order_ids')
+
+        if not order_ids or not isinstance(order_ids, list):
+            return JsonResponse({'success': False, 'error': 'Invalid or missing order IDs.'}, status=400)
+
+        # Filter valid integer IDs
+        valid_ids = [int(id) for id in order_ids if str(id).isdigit()]
+        
+        if not valid_ids:
+             return JsonResponse({'success': False, 'error': 'No valid order IDs provided.'}, status=400)
+
+        # Perform deletion
+        deleted_count, _ = Order.objects.filter(pk__in=valid_ids).delete()
+        
+        messages.success(request, f'{deleted_count} order(s) deleted successfully.')
+        return JsonResponse({'success': True, 'message': f'{deleted_count} order(s) deleted.'})
+
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON format.'}, status=400)
+    except Exception as e:
+        # Log error
+        messages.error(request, f'An error occurred during bulk deletion: {str(e)}')
+        return JsonResponse({'success': False, 'error': f'An unexpected error occurred: {str(e)}'}, status=500)
+
+@login_required
+@require_POST
+def bulk_update_order_status(request):
+    # Optional: Permission check
+        
+    try:
+        data = json.loads(request.body)
+        order_ids = data.get('order_ids')
+        new_status = data.get('status')
+
+        if not order_ids or not isinstance(order_ids, list):
+            return JsonResponse({'success': False, 'error': 'Invalid or missing order IDs.'}, status=400)
+            
+        valid_statuses = [s[0] for s in Order.ORDER_STATUS]
+        if not new_status or new_status not in valid_statuses:
+            return JsonResponse({'success': False, 'error': f'Invalid status: {new_status}'}, status=400)
+            
+        valid_ids = [int(id) for id in order_ids if str(id).isdigit()]
+        if not valid_ids:
+             return JsonResponse({'success': False, 'error': 'No valid order IDs provided.'}, status=400)
+
+        updated_count = 0
+        inventory_errors = []
+
+        # Use a transaction to ensure atomicity
+        with transaction.atomic():
+            # Fetch the orders to be updated
+            orders_to_update = Order.objects.select_for_update().filter(pk__in=valid_ids) 
+            # select_for_update locks the rows
+
+            for order in orders_to_update:
+                previous_status = order.status
+                
+                # Skip if status is already the target status
+                if previous_status == new_status:
+                    continue
+
+                order.status = new_status
+                order.save() # Save the status change first
+                updated_count += 1
+                
+                # --- Trigger Inventory Update Logic --- 
+                if previous_status == 'PENDING' and new_status == 'COMPLETED':
+                    try:
+                        for item in order.items.all(): 
+                            inventory_item, created = InventoryItem.objects.get_or_create(
+                                name=item.product_name,
+                                defaults={'quantity': 0, 'description': '', 'threshold': 0}
+                            )
+                            inventory_item.quantity += item.quantity
+                            inventory_item.save() 
+                    except Exception as e:
+                        # Log the specific inventory error but continue processing other orders
+                        # logger.exception(f"Inventory update failed for order {order.order_number} item {item.product_name}: {str(e)}")
+                        inventory_errors.append(f"Order {order.order_number}: {str(e)}")
+                        # Note: Depending on requirements, you might want to fail the entire transaction here
+                        # by raising the exception instead of appending to inventory_errors.
+                        # raise e # Uncomment this to make the whole bulk operation fail if one inventory update fails
+        
+        # --- Prepare response message --- 
+        message = f'{updated_count} order(s) status updated to {new_status}.'
+        success_status = True
+        
+        if inventory_errors:
+            error_details = " Inventory update issues: " + "; ".join(inventory_errors)
+            message += error_details
+            messages.warning(request, message) # Use warning if there were partial errors
+            # Decide if the overall operation counts as success if inventory failed
+            # success_status = False # Uncomment if inventory failure means overall failure
+        else:
+             messages.success(request, message)
+
+        return JsonResponse({'success': success_status, 'message': message})
+
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON format.'}, status=400)
+    except IntegrityError as e: # Catch potential database integrity errors
+        messages.error(request, f'A database integrity error occurred: {str(e)}')
+        return JsonResponse({'success': False, 'error': f'Database integrity error: {str(e)}'}, status=500)
+    except Exception as e:
+        # Log error
+        messages.error(request, f'An unexpected error occurred during bulk status update: {str(e)}')
+        return JsonResponse({'success': False, 'error': f'An unexpected error occurred: {str(e)}'}, status=500)

@@ -90,25 +90,27 @@ class Order(models.Model):
     date_ordered = models.DateTimeField(auto_now_add=True)
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='orders')
     status = models.CharField(max_length=20, choices=ORDER_STATUS, default='PENDING')
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    # New fields added:
-    product = models.CharField(max_length=255, blank=True, null=True)
-    quantity = models.PositiveIntegerField(blank=True, null=True)
+    # total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00) # Removed for now, needs recalculation logic if used
+    # REMOVED Fields for single product/quantity:
+    # product = models.CharField(max_length=255, blank=True, null=True)
+    # quantity = models.PositiveIntegerField(blank=True, null=True)
     expected_delivery = models.DateField(blank=True, null=True)
     date_modified = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.order_number
 
-# Through model to represent items in an order
+# Model for items within an Order (Modified)
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_items')
-    inventory_item = models.ForeignKey(InventoryItem, on_delete=models.PROTECT)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items') # Changed related_name to 'items'
+    product_name = models.CharField(max_length=255) # Changed from inventory_item ForeignKey
     quantity = models.PositiveIntegerField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    # REMOVED price field for now
+    # price = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
-        return f"{self.quantity} x {self.inventory_item.name} in order {self.order.order_number}"
+        # Updated __str__ representation
+        return f"{self.quantity} x {self.product_name} in order {self.order.order_number}"
 
 # Manage orders placed to suppliers
 class PurchaseOrder(models.Model):
