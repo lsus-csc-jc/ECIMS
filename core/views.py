@@ -175,24 +175,45 @@ def add_user(request):
         return JsonResponse({"success": False, "error": str(e)})
 
 
-def reset_user_password(request, user_id):
-    user = get_object_or_404(User, id=user_id)
-    if request.method == 'POST':
-        new_password = request.POST.get('new_password')
-        confirm_password = request.POST.get('confirm_password')
-        
-        if new_password and new_password == confirm_password:
-            user.set_password(new_password)
-            user.save()
-            messages.success(request, "Password reset successfully!")
-        else:
-            messages.error(request, "Passwords do not match or are empty.")
-        
-        # Redirect back to your settings page or user management page
-        return redirect('settings')  # Adjust to your actual redirect
+
+def reset_password(request):
+    if request.method == "POST":
+        new_password = request.POST.get('new_password', '').strip()
+        confirm_password = request.POST.get('confirm_password', '').strip()
+        target_user_id = request.POST.get('target_user_id', None)
+
+        # Debugging: print POST data values
+        print("POST new_password:", new_password)
+        print("POST confirm_password:", confirm_password)
+        print("POST target_user_id:", target_user_id)
+
+        if not target_user_id:
+            messages.error(request, "No user selected for password reset.")
+            return redirect('settings')  # adjust to your actual redirect
+
+        if new_password != confirm_password:
+            messages.error(request, "Passwords do not match. Please try again.")
+            return redirect('settings')
+
+        if not new_password:
+            messages.error(request, "Password cannot be empty.")
+            return redirect('settings')
+
+        try:
+            target_user = User.objects.get(pk=target_user_id)
+        except User.DoesNotExist:
+            messages.error(request, "User not found.")
+            return redirect('settings')
+
+        # Set the new password
+        target_user.set_password(new_password)
+        target_user.save()
+
+        messages.success(request, f"Password for {target_user.username} successfully changed!")
+        return redirect('settings')
+
+    # For GET requests or others, simply redirect.
     return redirect('settings')
-
-
 def delete_user(request, user_id):
     if request.method == 'POST':
         # Optional: check if the request.user is allowed to delete

@@ -334,8 +334,9 @@
 
       <!-- Modal Body with Reset Password Form -->
       <div class="modal-body">
-        <form id="resetPasswordForm" method="post" action="">
+        <form id="resetPasswordForm" method="post" action="{% url 'reset_password' %}">
           {% csrf_token %}
+          <input type="hidden" name="target_user_id" id="targetUserId" value="">
           <div class="mb-3">
             <label for="new_password_modal" class="form-label">New Password:</label>
             <div class="input-group">

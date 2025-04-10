@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import login_page, signup_page, dashboard_view, invmanagement_view, orders_view, save_order, suppliers_view, reports_view, settings_view, logout_view, add_inventory_item, delete_inventory_item, add_user, profile_list, reset_user_password, delete_user, edit_user, update_user, update_order, get_suppliers 
+from .views import login_page, signup_page, dashboard_view, invmanagement_view, orders_view, save_order, suppliers_view, reports_view, settings_view, logout_view, add_inventory_item, delete_inventory_item, add_user, profile_list, reset_password, delete_user, edit_user, update_user, update_order, get_suppliers 
 
 urlpatterns = [
     path('', dashboard_view, name='home'),  # This handles the root URL "/"
@@ -17,7 +17,7 @@ urlpatterns = [
     path('inventory/delete/<int:item_id>/', delete_inventory_item, name='delete_inventory_item'),
     path('add_user/', add_user, name='add_user'),
     path('profiles/', profile_list, name='profile_list'),
-    path('reset_user_password/<int:user_id>/', reset_user_password, name='reset_user_password'),
+    path('reset-password/', reset_password, name='reset_password'),
     path('delete_user/<int:user_id>/', delete_user, name='delete_user'),
     path('edit_user/<int:user_id>/', edit_user, name='edit_user'),
     path('update-user/<int:user_id>/', update_user, name='update_user'),
