@@ -5,7 +5,8 @@ from .views import (
     add_inventory_item, delete_inventory_item, add_user, profile_list, 
     reset_password, delete_user, edit_user, update_user, update_order, 
     get_suppliers, delete_order, 
-    bulk_delete_orders, bulk_update_order_status
+    bulk_delete_orders, bulk_update_order_status,
+    bulk_delete_inventory_items
 )
 
 urlpatterns = [
@@ -33,4 +34,5 @@ urlpatterns = [
     path('delete_order/<int:order_id>/', delete_order, name='delete_order'),
     path('orders/bulk_delete/', bulk_delete_orders, name='bulk_delete_orders'),
     path('orders/bulk_update_status/', bulk_update_order_status, name='bulk_update_order_status'),
+    path('inventory/bulk_delete/', bulk_delete_inventory_items, name='bulk_delete_inventory_items'),
 ]

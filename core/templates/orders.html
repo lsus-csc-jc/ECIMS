@@ -256,7 +256,7 @@
                                 <th>Supplier</th>
                                 <th>Date Created</th>
                                 <th>Delivery Date</th>
-                                <th>Status & Actions</th> <!-- Combined Header -->
+                                <th>Status</th> <!-- Combined Header -->
                                 <th>Details</th> <!-- Renamed Header -->
                             </tr>
                         </thead>
@@ -276,17 +276,13 @@
             N/A
         {% endif %}
     </td>
-    <td> <!-- Status and Actions Column - This is cell index 5 now -->
-        <div class="input-group input-group-sm"> 
-          <select name="status" class="form-select">
-              <option value="PENDING" {% if order.status == "PENDING" %}selected{% endif %}>Pending</option>
-              <option value="COMPLETED" {% if order.status == "COMPLETED" %}selected{% endif %}>Completed</option>
-              <option value="CANCELLED" {% if order.status == "CANCELLED" %}selected{% endif %}>Cancelled</option>
-          </select>
-        </div>
+    <td> <!-- Status and Actions Column -->
+        <span class="fw-bold {% if order.status == 'PENDING' %}text-warning{% elif order.status == 'COMPLETED' %}text-success{% elif order.status == 'CANCELLED' %}text-secondary{% else %}text-muted{% endif %}">
+            {{ order.get_status_display }}
+        </span>
     </td>
-    <td> <!-- Details Toggle Column - This is cell index 6 now -->
-        <button type="button" class="btn btn-primary btn-sm" onclick="toggleDetails('{{ order.id }}')">+</button> 
+    <td> <!-- Details Toggle Column -->
+        <button type="button" class="btn btn-primary btn-sm" onclick="toggleDetails('{{ order.id }}')">+</button>
     </td>
 </tr>
 {% endwith %}
@@ -356,7 +352,7 @@
                             </div>
                             <!-- More items added here by JS -->
                         </div>
-                        <button type="button" id="addItemBtn" class="btn btn-outline-secondary btn-sm mb-3">+ Add Another Item</button>
+                        <button type="button" id="addItemBtn" class="btn btn-outline-secondary btn-sm mb-3">+</button>
                         
                         <hr>
                         <div class="text-end">
@@ -369,14 +365,11 @@
         </div>
     </div>
     
-    <!-- Bootstrap JS & Other Scripts -->
+    <!-- Bootstrap Bundle with Popper -->
     <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.2/dist/chart.umd.js"
-            integrity="sha384-eI7PSr3L1XLISH8JdDII5YN/njoSsxfbrkCTnJrzXt+ENP5MOVBxD+l6sEG4zoLp"
-            crossorigin="anonymous"></script>
+
+    <!-- Navigation & Orders specific JS -->
     <script src="{% static 'core/js/navigation.js' %}"></script>
     <script src="{% static 'core/js/orders.js' %}"></script>
-    
-   
 </body>
 </html>

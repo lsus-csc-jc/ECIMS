@@ -190,45 +190,213 @@
           <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
             <h1 class="h2">Dashboard</h1>
           </div>
+          <!-- KPI Cards Row -->
           <div class="container mt-4">
-            <div class="row text-center">
-              <div class="col-md-4">
-                <a href="invmanagement.html" class="text-decoration-none">
-                  <div class="card border-primary shadow-sm">
-                    <div class="card-body">
-                      <h5 class="card-title">Products</h5>
-                      <p class="display-4" id="total-products">?</p>
+            <div class="row text-center g-3">
+              <div class="col-md-3">
+                <a href="{% url 'invmanagement' %}" class="text-decoration-none text-dark">
+                  <div class="card border-primary shadow-sm h-100">
+                    <div class="card-body d-flex flex-column justify-content-center">
+                      <h5 class="card-title">Total Products</h5>
+                      <p class="display-4" id="total-products">{{ total_products }}</p>
                     </div>
                   </div>
                 </a>
               </div>
-              <div class="col-md-4">
-                <a href="invmanagement.html" class="text-decoration-none">
-                  <div class="card border-warning shadow-sm">
-                    <div class="card-body">
+              <div class="col-md-3">
+                <a href="{% url 'invmanagement' %}" class="text-decoration-none text-dark">
+                  <div class="card border-warning shadow-sm h-100">
+                    <div class="card-body d-flex flex-column justify-content-center">
                       <h5 class="card-title">Stock Alerts</h5>
-                      <p class="display-4" id="total-alerts">?</p>
+                      <p class="display-4" id="total-alerts">{{ stock_alerts }}</p>
                     </div>
                   </div>
                 </a>
               </div>
-              <div class="col-md-4">
-                <a href="orders.html" class="text-decoration-none">
+              <div class="col-md-3">
+                <a href="{% url 'orders' %}" class="text-decoration-none text-dark">
                 <div class="card border-danger shadow-sm">
-                  <div class="card-body">
+                  <div class="card-body d-flex flex-column justify-content-center">
                     <h5 class="card-title">Pending Orders</h5>
-                    <p class="display-4" id="pending-orders">?</p>
+                    <p class="display-4" id="pending-orders">{{ pending_orders }}</p>
+                  </div>
+                </div>
+                </a>
+              </div>
+              <div class="col-md-3">
+                <a href="{% url 'suppliers' %}" class="text-decoration-none text-dark">
+                <div class="card border-info shadow-sm h-100">
+                  <div class="card-body d-flex flex-column justify-content-center">
+                    <h5 class="card-title">Total Suppliers</h5>
+                    <p class="display-4" id="total-suppliers">{{ total_suppliers }}</p>
                   </div>
                 </div>
                 </a>
               </div>
             </div>
           </div>
+         
+          <!-- Charts and Lists Row -->
+          <div class="row mt-4 g-3">
+            <!-- Inventory Status Chart -->
+            <div class="col-md-6">
+              <div class="card border-primary shadow-sm">
+                <div class="card-header fw-bold">Inventory Status Breakdown</div>
+                <div class="card-body">
+                  <canvas id="inventoryStatusChart"></canvas>
+                </div>
+              </div>
+            </div>
+           
+            <!-- Recent Orders List -->
+            <div class="col-md-6">
+              <div class="card border-primary shadow-sm">
+                <div class="card-header fw-bold">Recent Orders</div>
+                <div class="card-body">
+                  {% if recent_orders %}
+                  <ul class="list-group list-group-flush">
+                    {% for order in recent_orders %}
+                      <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>#{{ order.order_number }} - {{ order.supplier.name }}</span>
+                        <span class="fw-bold {% if order.status == 'PENDING' %}text-warning{% elif order.status == 'COMPLETED' %}text-success{% else %}text-secondary{% endif %}">{{ order.get_status_display }}</span>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                  {% else %}
+                  <p class="text-muted">No recent orders.</p>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Low Stock Items Row -->
+          <div class="row mt-4 g-3">
+             <div class="col-12">
+                <div class="card border-primary shadow-sm">
+                    <div class="card-header fw-bold">Items Needing Attention (Low Stock / Out of Stock)</div>
+                    <div class="card-body">
+                        {% if low_stock_items %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead>
+                                    <tr><th>Product</th><th>Quantity</th><th>Threshold</th><th>Status</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in low_stock_items %}
+                                    <tr>
+                                        <td>{{ item.name }}</td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>{{ item.threshold }}</td>
+                                        <td>
+                                            <span class="fw-bold {% if item.status == 1 %}text-danger{% elif item.status == 2 %}text-warning{% elif item.status == 3 %}text-success{% else %}text-secondary{% endif %}">
+                                                {{ item.get_status_display }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted">All inventory levels are currently sufficient.</p>
+                        {% endif %}
+                    </div>
+                </div>
+             </div>
+          </div>
 
           <!-- Bootstrap Bundle JS, Chart.js, and Navigation JS -->
           <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
           <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.2/dist/chart.umd.js" integrity="sha384-eI7PSr3L1XLISH8JdDII5YN/njoSsxfbrkCTnJrzXt+ENP5MOVBxD+l6sEG4zoLp" crossorigin="anonymous"></script>
           <script src="{% static 'core/js/navigation.js' %}"></script>
+         
+          <!-- Dashboard Specific JS for Chart -->
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              const ctx = document.getElementById('inventoryStatusChart');
+              const chartLabels = {{ inventory_chart_labels|safe }};
+              const chartData = {{ inventory_chart_data|safe }};
+             
+              // Define colors (you can customize these)
+              const backgroundColors = [
+                  'rgba(220, 53, 69, 0.7)',  // Danger (Out of Stock)
+                  'rgba(255, 193, 7, 0.7)',   // Warning (Low Stock)
+                  'rgba(25, 135, 84, 0.7)',  // Success (In Stock)
+                  'rgba(108, 117, 125, 0.7)' // Secondary (Unknown/Other)
+              ];
+              const borderColors = [
+                  'rgba(220, 53, 69, 1)',
+                  'rgba(255, 193, 7, 1)',
+                  'rgba(25, 135, 84, 1)',
+                  'rgba(108, 117, 125, 1)'
+              ];
+             
+              // Map labels to colors dynamically (ensure order matches if statuses aren't guaranteed)
+              // This is a simple approach; a more robust one would map explicitly
+              const chartBackgroundColors = chartLabels.map(label => {
+                  if (label === 'Out of Stock') return backgroundColors[0];
+                  if (label === 'Low Stock') return backgroundColors[1];
+                  if (label === 'In Stock') return backgroundColors[2];
+                  return backgroundColors[3]; // Default/Unknown
+              });
+              const chartBorderColors = chartLabels.map(label => {
+                  if (label === 'Out of Stock') return borderColors[0];
+                  if (label === 'Low Stock') return borderColors[1];
+                  if (label === 'In Stock') return borderColors[2];
+                  return borderColors[3]; // Default/Unknown
+              });
+
+              if (ctx && chartLabels.length > 0 && chartData.length > 0) {
+                new Chart(ctx, {
+                  type: 'pie',
+                  data: {
+                    labels: chartLabels,
+                    datasets: [{
+                      label: 'Inventory Status',
+                      data: chartData,
+                      backgroundColor: chartBackgroundColors,
+                      borderColor: chartBorderColors,
+                      borderWidth: 1
+                    }]
+                  },
+                  options: {
+                    responsive: true,
+                    maintainAspectRatio: true, // Adjust as needed
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed;
+                                    }
+                                    // Optional: Add percentage
+                                    // const total = context.dataset.data.reduce((sum, value) => sum + value, 0);
+                                    // const percentage = ((context.parsed / total) * 100).toFixed(1) + '%';
+                                    // label += ` (${percentage})`; 
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                  }
+                });
+              } else {
+                  console.log("Chart canvas not found or no data for chart.");
+                  // Optionally display a message in the card body if no data
+                  if(ctx && chartLabels.length === 0) {
+                      ctx.parentNode.innerHTML = '<p class="text-muted text-center">No inventory data available for chart.</p>';
+                  }
+              }
+            });
+          </script>
         </main>
       </div>
     </div>

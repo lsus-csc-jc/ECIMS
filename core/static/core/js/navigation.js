@@ -28,6 +28,9 @@ document.addEventListener("DOMContentLoaded", function () {
             localStorage.removeItem("authToken"); // Clear token from localStorage
             sessionStorage.clear(); // Clear sessionStorage data
 
+            // Clear the viewed low stock items history on logout
+            localStorage.removeItem("viewedLowStockIds"); 
+
             // Show a thank-you message before redirecting
             alert("Thank you for using ECIMS!");
 

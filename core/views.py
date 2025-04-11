@@ -17,6 +17,7 @@ from .forms import SignUpForm  # Import the fixed signup form
 from .models import Order, Supplier, Profile, InventoryItem, OrderItem
 import logging
 from django.db import transaction, IntegrityError
+from django.db.models import Count, Q # Import Q for complex lookups
 
 # Get an instance of a logger
 # logger = logging.getLogger(__name__) # Removing logger for simplification
@@ -385,7 +386,40 @@ def settings_view(request):
 
 @login_required
 def dashboard_view(request):
-    return render(request, 'dashboard.html')
+    # Calculate KPI counts
+    total_products = InventoryItem.objects.count()
+    # Count items that are Low Stock (2) or Out of Stock (1)
+    stock_alerts = InventoryItem.objects.filter(Q(status=1) | Q(status=2)).count()
+    pending_orders = Order.objects.filter(status='PENDING').count()
+    total_suppliers = Supplier.objects.count() # Added supplier count
+    
+    # Fetch recent orders (e.g., last 5)
+    recent_orders = Order.objects.order_by('-date_ordered')[:5]
+    
+    # Fetch low/out-of-stock items
+    low_stock_items = InventoryItem.objects.filter(Q(status=1) | Q(status=2)).order_by('status', 'name')
+    
+    # Prepare data for Inventory Status Pie Chart
+    inventory_status_counts = InventoryItem.objects.values('status').annotate(count=Count('id')).order_by('status')
+    # Convert status codes to labels for the chart
+    chart_labels = []
+    chart_data = []
+    status_map = dict(InventoryItem.INV_STATUS_CHOICES) # Use choices from model
+    for item in inventory_status_counts:
+        chart_labels.append(status_map.get(item['status'], 'Unknown'))
+        chart_data.append(item['count'])
+
+    context = {
+        'total_products': total_products,
+        'stock_alerts': stock_alerts,
+        'pending_orders': pending_orders,
+        'total_suppliers': total_suppliers, # Added to context
+        'recent_orders': recent_orders,
+        'low_stock_items': low_stock_items,
+        'inventory_chart_labels': json.dumps(chart_labels), # Pass as JSON for JS
+        'inventory_chart_data': json.dumps(chart_data),   # Pass as JSON for JS
+    }
+    return render(request, 'dashboard.html', context)
 
 @login_required
 def invmanagement_view(request):
@@ -550,4 +584,38 @@ def bulk_update_order_status(request):
     except Exception as e:
         # Log error
         messages.error(request, f'An unexpected error occurred during bulk status update: {str(e)}')
+        return JsonResponse({'success': False, 'error': f'An unexpected error occurred: {str(e)}'}, status=500)
+
+@login_required
+@require_POST
+def bulk_delete_inventory_items(request):
+    # Optional: Permission check (e.g., require manager role)
+    # profile = getattr(request.user, 'profile', None)
+    # if not profile or profile.role not in ['Manager', 'Admin']:
+    #     return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        item_ids = data.get('item_ids')
+
+        if not item_ids or not isinstance(item_ids, list):
+            return JsonResponse({'success': False, 'error': 'Invalid or missing item IDs.'}, status=400)
+
+        # Filter valid integer IDs
+        valid_ids = [int(id) for id in item_ids if str(id).isdigit()]
+        
+        if not valid_ids:
+             return JsonResponse({'success': False, 'error': 'No valid item IDs provided.'}, status=400)
+
+        # Perform deletion
+        deleted_count, _ = InventoryItem.objects.filter(pk__in=valid_ids).delete()
+        
+        # Note: We return JSON here because the inventory page seems to use fetch/API calls
+        return JsonResponse({'success': True, 'message': f'{deleted_count} item(s) deleted.'})
+
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON format.'}, status=400)
+    except Exception as e:
+        # Log error in a real application
+        # logger.exception("Error during bulk inventory item deletion:")
         return JsonResponse({'success': False, 'error': f'An unexpected error occurred: {str(e)}'}, status=500)

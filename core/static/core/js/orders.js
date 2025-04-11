@@ -42,12 +42,19 @@ function updateSupplierDropdown() {
 
 // Function: Toggle the details row for an order
 function toggleDetails(orderId) {
+    console.log(`toggleDetails called for order ID: ${orderId}`); // Log entry
     const detailsRow = document.getElementById('details-' + orderId);
+    console.log('Found details row:', detailsRow); // Log the found element
+    
     if (detailsRow) {
-        if (detailsRow.style.display === 'none' || detailsRow.style.display === '') {
+        const currentDisplay = detailsRow.style.display;
+        console.log(`Current display style: '${currentDisplay}'`); // Log current style
+        if (currentDisplay === 'none' || currentDisplay === '') {
             detailsRow.style.display = 'table-row';
+            console.log('Set display to table-row');
         } else {
             detailsRow.style.display = 'none';
+            console.log('Set display to none');
         }
     } else {
         console.error("No details row found for order ID:", orderId);
@@ -88,8 +95,7 @@ function filterOrders() {
         // Get values from cells and data attributes
         const orderNumber = row.cells[1].innerText.toLowerCase(); // Index 1 for Order ID
         const supplierText = row.cells[2].innerText.toLowerCase(); // Index 2 for Supplier
-        const statusSelect = row.querySelector("select[name='status']"); 
-        const statusText = statusSelect ? statusSelect.value.toLowerCase().trim() : "";
+        const statusText = row.cells[5].innerText.toLowerCase().trim(); 
         const productNames = row.dataset.products || ""; // Get product names from data attribute
         const dateCreatedText = row.cells[3].innerText.trim(); // Index 3 for Date Created
         
@@ -143,11 +149,17 @@ function filterOrders() {
         const finalMatch = (matchesSearch && matchesStatus && matchesDate);
         console.log(`Row ${idx} - Search:'${searchQuery}', Status:'${statusFilter}', DateRange:[${startDateValue}-${endDateValue}] => Matches: Date=${matchesDate}, Search=${matchesSearch}, Status=${matchesStatus} => Final=${finalMatch}`);
         
-        // Set the row visibility (including its corresponding details row if it exists)
-        row.style.display = finalMatch ? "" : "none";
+        // --- Set Row Visibility --- 
         const detailsRow = document.getElementById('details-' + row.querySelector('.order-checkbox').value); // Find details row by ID
-        if (detailsRow) {
-             detailsRow.style.display = finalMatch ? detailsRow.dataset.originalDisplay || 'none' : 'none'; // Hide details row too, respecting its original toggle state requires more work
+        
+        if (finalMatch) {
+            row.style.display = ""; // Show main row
+            // Don't touch detailsRow.style.display here - let toggleDetails manage it
+        } else {
+            row.style.display = "none"; // Hide main row
+            if (detailsRow) {
+                detailsRow.style.display = "none"; // Always hide details row if main row is hidden
+            }
         }
     });
 }
@@ -507,43 +519,14 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     } else {
-        console.error("Bulk Update Status button or select dropdown not found!");
+        console.warn("Bulk Status Update button not found.");
     }
 
-    // --- Update Order Status Logic REMOVED --- 
-    /*
-    const updateButtons = document.querySelectorAll(".update-order-btn");
-    updateButtons.forEach(button => {
-        button.addEventListener("click", function(event) {
-            console.log("Update Order button clicked");
-            event.preventDefault();
-            const orderId = this.dataset.orderId;
-            const row = this.closest("tr");
-            const statusSelect = row.querySelector("select[name='status']");
-            const newStatus = statusSelect.value;
-            const payload = { status: newStatus };
+    // Initial setup of button states
+    updateBulkActionButtons();
 
-            fetch(`/update_order/${orderId}/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log("Update Response:", data);
-                if (data.success) {
-                    alert("Order status updated successfully!");
-                     // Optionally refresh if inventory updates affect display
-                     // window.location.reload(); 
-                } else {
-                    alert("Failed to update order: " + data.error);
-                }
-            })
-            .catch(error => console.error("Error:", error));
-        });
-    });
-    */
-});
+    // --- END: Bulk Actions Logic ---
+    
+    // --- Tour Logic Removed ---
+
+}); // End of DOMContentLoaded

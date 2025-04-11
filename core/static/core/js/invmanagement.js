@@ -3,9 +3,11 @@ $(document).ready(function () {
 
     const apiUrl = "/api/v1/items/";
     const tableBody = $("#tableBody");
-    const productStatusMap = new Map();
-    let modalActive = false;
-    let lowStockQueue = [];
+    let currentInventoryData = []; // Store current data for comparison if needed
+    
+    // --- Checkbox & Bulk Action Elements --- 
+    const selectAllCheckbox = $('#selectAllInvItems');
+    const bulkDeleteBtn = $('#bulkDeleteInvBtn');
 
     function getViewedLowStockIds() {
         return new Set(JSON.parse(localStorage.getItem("viewedLowStockIds") || "[]"));
@@ -17,7 +19,7 @@ $(document).ready(function () {
         localStorage.setItem("viewedLowStockIds", JSON.stringify(Array.from(viewed)));
     }
 
-    async function fetchInventoryData(showAlert = false) {
+    async function fetchInventoryData(showModalOnLoad = false) {
         console.log("🔄 Fetching inventory data...");
 
         try {
@@ -27,9 +29,23 @@ $(document).ready(function () {
             const data = await response.json();
             console.log("✅ API Data Received:", data);
 
-            const oldStatuses = new Map(productStatusMap);
+            // Store fetched data
+            currentInventoryData = data; 
+            
+            // Update the table UI
             updateTable(data);
-            if (showAlert) checkAndQueueLowStock(data, oldStatuses);
+            updateSelectAllCheckboxState();
+            
+            // Only check for alerts and show modal on the initial load
+            if (showModalOnLoad) {
+                const itemsToAlert = findUnviewedLowStockItems(data);
+                if (itemsToAlert.length > 0) {
+                    console.log("🚨 Found unviewed low stock items on load:", itemsToAlert);
+                    showLowStockAlert(itemsToAlert); 
+                } else {
+                    console.log("👍 No unviewed low stock items on load.");
+                }
+            }
         } catch (error) {
             console.error("❌ Error fetching inventory data:", error);
         }
@@ -41,7 +57,7 @@ $(document).ready(function () {
 
         if (data.length === 0) {
             console.warn("⚠️ No inventory items found!");
-            tableBody.html(`<tr><td colspan="5" class="text-center text-warning">No inventory items found.</td></tr>`);
+            tableBody.html(`<tr><td colspan="6" class="text-center text-warning">No inventory items found.</td></tr>`);
             return;
         }
 
@@ -58,81 +74,150 @@ $(document).ready(function () {
                     statusBadge = `<span class="badge bg-danger">Out-of-Stock</span>`;
                     break;
                 default:
-                    statusBadge = `<span class="badge bg-warning text-dark">Unknown</span>`;
+                    statusBadge = `<span class="badge bg-secondary">Unknown</span>`;
             }
 
             let row = `
                 <tr data-id="${item.id}">
+                    <td><input type="checkbox" class="form-check-input inv-item-checkbox" value="${item.id}"></td>
                     <td>${item.name}</td>
                     <td>${item.quantity}</td>
                     <td>${item.threshold}</td>
                     <td>${statusBadge}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary edit-btn"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-sm btn-outline-danger delete-btn"><i class="fas fa-trash"></i></button>
+                        <!-- <button class="btn btn-sm btn-outline-danger delete-btn"><i class="fas fa-trash"></i></button> -->
                     </td>
                 </tr>`;
             tableBody.append(row);
-
-            productStatusMap.set(item.id, item.status);
         });
-
+        attachCheckboxListeners();
         console.log("✅ Table Updated Successfully!");
     }
 
-    function checkAndQueueLowStock(data, oldStatuses) {
+    // Finds items that are low/out-of-stock and haven't been viewed
+    function findUnviewedLowStockItems(data) {
         const viewed = getViewedLowStockIds();
+        const lowStockItems = [];
 
         data.forEach(product => {
-            const prevStatus = oldStatuses.get(product.id);
             const isNowLowStock = product.status === 2 || product.status === 1;
-            const wasLowStock = prevStatus === 2 || prevStatus === 1;
 
-            const statusChanged = prevStatus !== product.status;
-            const wentFromHighToLow = (prevStatus === 3 || prevStatus === undefined) && isNowLowStock;
-
-            if (statusChanged && isNowLowStock && viewed.has(product.id.toString())) {
-                viewed.delete(product.id.toString());
-                localStorage.setItem("viewedLowStockIds", JSON.stringify(Array.from(viewed)));
+            if (isNowLowStock && !viewed.has(product.id.toString())) {
+                lowStockItems.push(product);
             }
-
-            if (isNowLowStock && !viewed.has(product.id.toString()) && (statusChanged || wentFromHighToLow) && !lowStockQueue.some(p => p.id === product.id)) {
-                lowStockQueue.push(product);
-            }
-
-            productStatusMap.set(product.id, product.status);
         });
-
-        if (!modalActive) showNextAlert();
+        return lowStockItems;
     }
 
-    function showNextAlert() {
-        if (lowStockQueue.length === 0) {
-            modalActive = false;
+    // Shows a single modal listing all items passed to it
+    function showLowStockAlert(itemsToShow) {
+        if (!itemsToShow || itemsToShow.length === 0) {
             return;
         }
 
-        modalActive = true;
-        const product = lowStockQueue.shift();
-
-        const content = `
-            <strong>${product.name}</strong><br>
-            Quantity: ${product.quantity}<br>
-            Threshold: ${product.threshold}<br>
-            <small>Status: ${product.status === 1 ? "Out of Stock" : "Low Stock"}</small>
-        `;
-        $("#notificationContent").html(content);
+        // Build the list of items for the modal body
+        let contentHtml = '<ul class="list-unstyled mb-0">';
+        itemsToShow.forEach(product => {
+            const statusText = product.status === 1 ? "Out of Stock" : "Low Stock";
+            contentHtml += `
+                <li class="mb-2 pb-2 border-bottom">
+                    <strong>${product.name}</strong><br>
+                    <small>Qty: ${product.quantity} | Threshold: ${product.threshold} | Status: ${statusText}</small>
+                </li>`;
+        });
+        contentHtml += '</ul>';
+        
+        $("#notificationContent").html(contentHtml);
         const modal = new bootstrap.Modal(document.getElementById("notificationModal"));
         modal.show();
 
+        // Update the "Mark as Viewed" button to handle all shown items
         $("#markViewedBtn").off("click").on("click", function () {
-            markAsViewed(product.id);
+            itemsToShow.forEach(product => {
+                markAsViewed(product.id);
+            });
             modal.hide();
-            setTimeout(() => {
-                modalActive = false;
-                showNextAlert();
-            }, 500);
         });
+    }
+
+    // --- Checkbox & Bulk Action Logic --- 
+
+    function attachCheckboxListeners() {
+        selectAllCheckbox.off('change');
+        tableBody.off('change', '.inv-item-checkbox'); 
+
+        if (selectAllCheckbox.length && tableBody.find('.inv-item-checkbox').length > 0) {
+            selectAllCheckbox.on('change', function() {
+                tableBody.find('.inv-item-checkbox').prop('checked', this.checked);
+            });
+        } else {
+            console.warn("Select All checkbox or item checkboxes not found when attaching listeners.");
+        }
+
+        tableBody.on('change', '.inv-item-checkbox', function() {
+            if (!this.checked) {
+                selectAllCheckbox.prop('checked', false);
+            }
+             updateSelectAllCheckboxState();
+        });
+    }
+    
+    function updateSelectAllCheckboxState() {
+         const allCheckboxes = tableBody.find('.inv-item-checkbox');
+         const allChecked = allCheckboxes.length > 0 && allCheckboxes.length === tableBody.find('.inv-item-checkbox:checked').length;
+         selectAllCheckbox.prop('checked', allChecked);
+    }
+
+    function getSelectedItemIds() {
+        const selectedIds = [];
+        tableBody.find('.inv-item-checkbox:checked').each(function() {
+             selectedIds.push($(this).val());
+        });
+        return selectedIds;
+    }
+
+    if (bulkDeleteBtn.length) {
+        bulkDeleteBtn.on('click', async function() {
+            const selectedIds = getSelectedItemIds();
+            if (selectedIds.length === 0) {
+                alert('Please select at least one item to delete.');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to delete ${selectedIds.length} selected item(s)?`)) {
+                console.log("Performing bulk delete for IDs:", selectedIds);
+                try {
+                    const response = await fetch('/inventory/bulk_delete/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCSRFToken()
+                        },
+                        body: JSON.stringify({ item_ids: selectedIds })
+                    });
+                    
+                    const data = await response.json();
+                    console.log("Bulk Delete Response:", data);
+
+                    if (!response.ok) {
+                        throw new Error(data.error || `HTTP error! Status: ${response.status}`);
+                    }
+                    
+                    if (data.success) {
+                        alert(data.message || 'Items deleted successfully.');
+                        await fetchInventoryData(true);
+                    } else {
+                        alert('Error deleting items: ' + (data.error || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error("Bulk Delete Fetch Error:", error);
+                    alert('An error occurred during bulk deletion: ' + error.message);
+                }
+            }
+        });
+    } else {
+         console.error("Bulk Delete button (#bulkDeleteInvBtn) not found!");
     }
 
     $("#searchInput").on("keyup", function () {
@@ -184,9 +269,9 @@ $(document).ready(function () {
     $(document).on("click", ".edit-btn", function () {
         let row = $(this).closest("tr");
         let productId = row.data("id");
-        let productName = row.find("td:eq(0)").text();
-        let productQuantity = row.find("td:eq(1)").text();
-        let productThreshold = row.find("td:eq(2)").text();
+        let productName = row.find("td:eq(1)").text();
+        let productQuantity = row.find("td:eq(2)").text();
+        let productThreshold = row.find("td:eq(3)").text();
 
         $("#editRowIndex").val(productId);
         $("#editProduct").val(productName);
@@ -234,30 +319,6 @@ $(document).ready(function () {
         }
     });
 
-    $(document).on("click", ".delete-btn", async function () {
-        let row = $(this).closest("tr");
-        let productId = row.data("id");
-
-        if (!confirm("⚠️ Are you sure you want to delete this product?")) return;
-
-        try {
-            const response = await fetch(`${apiUrl}${productId}/`, {
-                method: "DELETE",
-                headers: {
-                    "X-CSRFToken": getCSRFToken()
-                }
-            });
-
-            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
-            await fetchInventoryData(true);
-            console.log("✅ Product Deleted Successfully!");
-        } catch (error) {
-            console.error("❌ Error deleting product:", error);
-            alert("Failed to delete product. Please try again.");
-        }
-    });
-
     function getCSRFToken() {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -273,6 +334,13 @@ $(document).ready(function () {
         return cookieValue;
     }
 
+    // Initial fetch on page load - pass true to check for alerts
     fetchInventoryData(true);
-    setInterval(() => fetchInventoryData(true), 15000);
-});
+
+    // Set interval for background refresh - pass false to prevent alert popups
+    setInterval(() => fetchInventoryData(false), 15000);
+    attachCheckboxListeners();
+
+    // --- Tour Logic Removed ---
+
+}); // End of $(document).ready
