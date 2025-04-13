@@ -49,7 +49,7 @@ The goal of ECIMS is to deliver a scalable and adaptable inventory management sy
 - **Backend Development**:
   - Language: Python
   - Framework: Django
-  - Require Packages: djangorestframework, markdown, django-filter, python-dotenv, django-dotenv, djangorestframework-simplejwt
+  - Require Packages: djangorestframework, markdown, django-filter, python-dotenv, django-dotenv, djangorestframework-simplejwt, django-currentuser
   - Database: SQLite
   - API Development: Django REST Framework
   - Authentication: Django Authentication, DRF Token

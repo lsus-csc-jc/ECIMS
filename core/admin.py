@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Profile, Supplier, InventoryItem, Order, OrderItem
+from .models import Profile, Supplier, InventoryItem, Order, OrderItem, Changelog, InventoryItemChanges
 
 # Customize Profile admin to show user, role, and bio in the list view
 class ProfileAdmin(admin.ModelAdmin):
@@ -26,3 +26,5 @@ admin.site.register(Supplier, SupplierAdmin)
 admin.site.register(InventoryItem, InventoryItemAdmin)
 admin.site.register(Order, OrderAdmin)
 admin.site.register(OrderItem, OrderItemAdmin)
+admin.site.register(Changelog)
+admin.site.register(InventoryItemChanges)
