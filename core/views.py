@@ -45,6 +45,7 @@ def signup_page(request):
         form = SignUpForm()
     return render(request, 'signup.html', {'form': form})
 
+@login_required
 def save_order(request):
     if request.method == 'POST':
         try:
@@ -89,6 +90,7 @@ def save_order(request):
 
 @csrf_exempt
 @require_POST
+#TODO: @role_required(['Manager'])
 def add_user(request):
     name = request.POST.get("name")
     email = request.POST.get("email")
@@ -119,6 +121,7 @@ def add_user(request):
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)})
 
+#TODO: @role_required(['Manager'])
 def reset_user_password(request, user_id):
     user = get_object_or_404(User, id=user_id)
     if request.method == 'POST':
@@ -133,7 +136,7 @@ def reset_user_password(request, user_id):
             messages.error(request, "Passwords do not match or are empty.")
     return render(request, 'reset_password.html', {'user': user})
 
-
+#TODO: @role_required(['Manager'])
 def delete_user(request, user_id):
     if request.method == 'POST':
         # Optional: check if the request.user is allowed to delete
@@ -142,6 +145,7 @@ def delete_user(request, user_id):
         messages.success(request, 'User deleted successfully.')
     return redirect('settings')  # or wherever you want to go after deletion
 
+#TODO: @role_required(['Manager'])
 def edit_user(request, user_id):
     user_to_edit = get_object_or_404(User, pk=user_id)
 
@@ -184,6 +188,7 @@ def delete_inventory_item(request, item_id):
 
 @csrf_exempt
 @require_POST
+@login_required
 def mark_alert_viewed(request, item_id):
     try:
         item = InventoryItem.objects.get(id=item_id)
@@ -195,6 +200,7 @@ def mark_alert_viewed(request, item_id):
 
 @csrf_exempt
 @require_http_methods(["PUT"])
+@login_required
 def update_inventory_item(request, item_id):
     try:
         # Retrieve the item
