@@ -15,7 +15,4 @@ class Migration(migrations.Migration):
             name='alert_triggered',
             field=models.BooleanField(default=False),
         ),
-        migrations.DeleteModel(
-            name='Notification',
-        ),
     ]

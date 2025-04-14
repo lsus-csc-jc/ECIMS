@@ -1,8 +1,6 @@
 from django.urls import path
-95-trigger-alerts-for-manager-and-owner
-from .views import (login_page, signup_page, dashboard_view, invmanagement_view, orders_view, save_order, suppliers_view, reports_view, settings_view, logout_view, changelog_view, add_inventory_item, delete_inventory_item, add_user, profile_list, reset_user_password, delete_user, edit_user, update_inventory_item, mark_alert_viewed 
-)
-main
+from .views import login_page, signup_page, dashboard_view, invmanagement_view, orders_view, save_order, suppliers_view, reports_view, settings_view, logout_view, changelog_view, add_inventory_item, delete_inventory_item, add_user, profile_list, reset_user_password, delete_user, edit_user, update_inventory_item, mark_alert_viewed
+
 urlpatterns = [
     path('', dashboard_view, name='home'),  # This handles the root URL "/"
     path('login.html', login_page, name='login'),
