@@ -348,112 +348,15 @@
           <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
           <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.2/dist/chart.umd.js" integrity="sha384-eI7PSr3L1XLISH8JdDII5YN/njoSsxfbrkCTnJrzXt+ENP5MOVBxD+l6sEG4zoLp" crossorigin="anonymous"></script>
           <script src="{% static 'core/js/navigation.js' %}"></script>
-         
-          <!-- Dashboard Specific JS for Chart -->
           <script>
-            document.addEventListener('DOMContentLoaded', function() {
-              const ctx = document.getElementById('inventoryStatusChart');
-              const chartLabels = {{ inventory_chart_labels|safe }};
-              const chartData = {{ inventory_chart_data|safe }};
-             
-              // Define colors (you can customize these)
-              const backgroundColors = [
-                  'rgba(220, 53, 69, 0.7)',  // Danger (Out of Stock)
-                  'rgba(255, 193, 7, 0.7)',   // Warning (Low Stock)
-                  'rgba(25, 135, 84, 0.7)',  // Success (In Stock)
-                  'rgba(108, 117, 125, 0.7)' // Secondary (Unknown/Other)
-              ];
-              const borderColors = [
-                  'rgba(220, 53, 69, 1)',
-                  'rgba(255, 193, 7, 1)',
-                  'rgba(25, 135, 84, 1)',
-                  'rgba(108, 117, 125, 1)'
-              ];
-             
-              // Map labels to colors dynamically (ensure order matches if statuses aren't guaranteed)
-              // This is a simple approach; a more robust one would map explicitly
-              const chartBackgroundColors = chartLabels.map(label => {
-                  if (label === 'Out of Stock') return backgroundColors[0];
-                  if (label === 'Low Stock') return backgroundColors[1];
-                  if (label === 'In Stock') return backgroundColors[2];
-                  return backgroundColors[3]; // Default/Unknown
-              });
-              const chartBorderColors = chartLabels.map(label => {
-                  if (label === 'Out of Stock') return borderColors[0];
-                  if (label === 'Low Stock') return borderColors[1];
-                  if (label === 'In Stock') return borderColors[2];
-                  return borderColors[3]; // Default/Unknown
-              });
-
-              if (ctx && chartLabels.length > 0 && chartData.length > 0) {
-                new Chart(ctx, {
-                  type: 'pie',
-                  data: {
-                    labels: chartLabels,
-                    datasets: [{
-                      label: 'Inventory Status',
-                      data: chartData,
-                      backgroundColor: chartBackgroundColors,
-                      borderColor: chartBorderColors,
-                      borderWidth: 1
-                    }]
-                  },
-                  options: {
-                    responsive: true,
-                    maintainAspectRatio: true, // Adjust as needed
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed !== null) {
-                                        label += context.parsed;
-                                    }
-                                    // Optional: Add percentage
-                                    // const total = context.dataset.data.reduce((sum, value) => sum + value, 0);
-                                    // const percentage = ((context.parsed / total) * 100).toFixed(1) + '%';
-                                    // label += ` (${percentage})`; 
-                                    return label;
-                                }
-                            }
-                        }
-                    }
-                  }
-                });
-              } else {
-                  console.log("Chart canvas not found or no data for chart.");
-                  // Optionally display a message in the card body if no data
-                  if(ctx && chartLabels.length === 0) {
-                      ctx.parentNode.innerHTML = '<p class="text-muted text-center">No inventory data available for chart.</p>';
-                  }
-              }
-            });
+            // Pass data from the backend to JavaScript
+            window.inventoryChartLabels = {{ inventory_chart_labels|safe }};
+            window.inventoryChartData = {{ inventory_chart_data|safe }};
           </script>
+          <script src="{% static 'core/js/dashboard.js' %}"></script>
         </main>
       </div>
     </div>
     {% include 'low_stock_alert.html' %}
-    
-    <!-- Feedback Link Script -->
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        const feedbackLink = document.getElementById('feedbackLink');
-        if (feedbackLink) {
-          feedbackLink.addEventListener('click', function (e) {
-            e.preventDefault(); // prevents the default "#" behavior
-            window.open(
-              'https://docs.google.com/forms/d/e/1FAIpQLSf1BVWDcJlxRCJ79_XoL43ReEImc_w9frnOYIRh40CCVe9xOA/viewform',
-              '_blank'
-            );
-          });
-        }
-      });
-    </script>
   </body>
 </html>

@@ -196,13 +196,12 @@
                                 <!-- Search input -->
                                 <div class="col-12 col-md-4">
                                     <input type="text" id="searchInput" class="form-control"
-                                           placeholder="Search product, supplier, order ID"
-                                           onkeyup="filterOrders()">
+                                           placeholder="Search product, supplier, order ID">
                                 </div>
                                 
                                 <!-- Status filter -->
                                 <div class="col-12 col-md-2">
-                                    <select id="statusFilter" class="form-control" onchange="filterOrders()">
+                                    <select id="statusFilter" class="form-control">
                                         <option value="">All Statuses</option>
                                         <option value="Pending">Pending</option>
                                         <option value="Completed">Completed</option>
@@ -212,8 +211,8 @@
                                 
                                 <!-- Date filters -->
                                 <div class="col-12 col-md-4 d-flex gap-2">
-                                    <input type="date" id="startDate" class="form-control" onchange="filterOrders()">
-                                    <input type="date" id="endDate" class="form-control" onchange="filterOrders()">
+                                    <input type="date" id="startDate" class="form-control">
+                                    <input type="date" id="endDate" class="form-control">
                                 </div>
                                 
                                 <!-- New Order Button -->
@@ -282,7 +281,7 @@
         </span>
     </td>
     <td> <!-- Details Toggle Column -->
-        <button type="button" class="btn btn-primary btn-sm" onclick="toggleDetails('{{ order.id }}')">+</button>
+        <button type="button" class="btn btn-primary btn-sm details-toggle" data-order-id="{{ order.id }}">+</button>
     </td>
 </tr>
 {% endwith %}
@@ -371,21 +370,5 @@
     <!-- Navigation & Orders specific JS -->
     <script src="{% static 'core/js/navigation.js' %}"></script>
     <script src="{% static 'core/js/orders.js' %}"></script>
-
-    <!-- Feedback Link Script -->
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        const feedbackLink = document.getElementById('feedbackLink');
-        if (feedbackLink) {
-          feedbackLink.addEventListener('click', function (e) {
-            e.preventDefault(); // prevents the default "#" behavior
-            window.open(
-              'https://docs.google.com/forms/d/e/1FAIpQLSf1BVWDcJlxRCJ79_XoL43ReEImc_w9frnOYIRh40CCVe9xOA/viewform',
-              '_blank'
-            );
-          });
-        }
-      });
-    </script>
 </body>
 </html>

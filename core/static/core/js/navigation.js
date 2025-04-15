@@ -70,4 +70,16 @@ document.addEventListener("DOMContentLoaded", function () {
     if (document.body.dataset.page === 'dashboard') {
         fetchDashboardData();
     }
+
+    // Feedback link functionality
+    const feedbackLink = document.getElementById('feedbackLink');
+    if (feedbackLink) {
+        feedbackLink.addEventListener('click', function (e) {
+            e.preventDefault(); // prevents the default "#" behavior
+            window.open(
+                'https://docs.google.com/forms/d/e/1FAIpQLSf1BVWDcJlxRCJ79_XoL43ReEImc_w9frnOYIRh40CCVe9xOA/viewform',
+                '_blank'
+            );
+        });
+    }
 });

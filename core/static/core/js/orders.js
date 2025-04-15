@@ -629,6 +629,20 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // --- END: Bulk Actions Logic ---
     
+    // Add event listeners for details toggle buttons (replacing inline onclick handlers)
+    document.querySelectorAll('.details-toggle').forEach(button => {
+        button.addEventListener('click', function() {
+            const orderId = this.getAttribute('data-order-id');
+            toggleDetails(orderId);
+        });
+    });
+    
+    // Add event listeners for filter inputs (replacing inline event handlers)
+    document.getElementById('searchInput').addEventListener('input', filterOrders);
+    document.getElementById('statusFilter').addEventListener('change', filterOrders);
+    document.getElementById('startDate').addEventListener('change', filterOrders);
+    document.getElementById('endDate').addEventListener('change', filterOrders);
+    
     // --- Tour Logic Removed ---
 
 }); // End of DOMContentLoaded
