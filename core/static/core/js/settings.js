@@ -1,4 +1,57 @@
 document.addEventListener("DOMContentLoaded", function () {
+    // Password toggle functionality
+    const togglePasswordBtn = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+    
+    if (togglePasswordBtn && passwordInput) {
+        togglePasswordBtn.addEventListener('click', function() {
+            // Toggle the type attribute
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            // Toggle the eye icon text
+            togglePasswordBtn.textContent = type === 'password' ? '👁️' : '👁️‍🗨️';
+        });
+    }
+    
+    // Password reset toggle functionality
+    const toggleNewPasswordBtn = document.getElementById('toggleNewPassword');
+    const newPasswordInput = document.getElementById('new_password');
+    
+    if (toggleNewPasswordBtn && newPasswordInput) {
+        toggleNewPasswordBtn.addEventListener('click', function() {
+            const type = newPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            newPasswordInput.setAttribute('type', type);
+            toggleNewPasswordBtn.textContent = type === 'password' ? '👁️' : '👁️‍🗨️';
+        });
+    }
+    
+    const toggleConfirmPasswordBtn = document.getElementById('toggleConfirmPassword');
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    
+    if (toggleConfirmPasswordBtn && confirmPasswordInput) {
+        toggleConfirmPasswordBtn.addEventListener('click', function() {
+            const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            confirmPasswordInput.setAttribute('type', type);
+            toggleConfirmPasswordBtn.textContent = type === 'password' ? '👁️' : '👁️‍🗨️';
+        });
+    }
+    
+    // Reset Password Modal Functionality
+    const resetPasswordBtns = document.querySelectorAll('.reset-password');
+    const resetPasswordModal = document.getElementById('resetPasswordModal');
+    
+    if (resetPasswordBtns.length > 0 && resetPasswordModal) {
+        resetPasswordBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const userId = this.getAttribute('data-userid');
+                document.getElementById('target_user_id').value = userId;
+                const modal = new bootstrap.Modal(resetPasswordModal);
+                modal.show();
+            });
+        });
+    }
+    
     // Get references to key DOM elements
     const addUserForm = document.getElementById("addUserForm");
     const tableBody = document.getElementById("userTableBody");

@@ -163,6 +163,12 @@
                 </li>
                 {% endif %}
                 <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center gap-2" href="#" id="feedbackLink">
+                    <i class="bi bi-chat-left-text"></i>
+                    Feedback
+                  </a>
+                </li>
+                <li class="nav-item">
                   <a class="nav-link d-flex align-items-center gap-2" href="#" id="logoutBtn">
                     <svg class="bi"><use xlink:href="#door-closed"/></svg>
                     Sign out
@@ -278,7 +284,6 @@
             <th>Name</th>
             <th>Email</th>
             <th>Role</th>
-            <th>Password</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -289,22 +294,8 @@
             <td class="user-email">{{ user_item.email }}</td>
             <td class="user-role">{{ user_item.profile.role }}</td>
             <td>
-              <form method="POST" action="{% url 'reset_password' %}" class="form-inline">
-                {% csrf_token %}
-                <input type="hidden" name="target_user_id" value="{{ user_item.id }}">
-                <div class="input-group input-group-sm mb-1">
-                  <span class="input-group-text" style="width: 60px;">New:</span>
-                  <input type="password" name="new_password" class="form-control" required>
-                </div>
-                <div class="input-group input-group-sm mb-1">
-                  <span class="input-group-text" style="width: 60px;">Confirm:</span>
-                  <input type="password" name="confirm_password" class="form-control" required>
-                </div>
-                <button type="submit" class="btn btn-sm btn-secondary w-100">Set New Password</button>
-              </form>
-            </td>
-            <td>
               <button type="button" class="btn btn-sm btn-warning edit-user">Edit</button>
+              <button type="button" class="btn btn-sm btn-info reset-password" data-userid="{{ user_item.id }}">Reset Password</button>
               <form method="POST" action="{% url 'delete_user' user_item.id %}" style="display:inline;">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-sm btn-danger">Delete</button>
@@ -313,7 +304,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="5">No users found.</td>
+            <td colspan="4">No users found.</td>
           </tr>
           {% endfor %}
         </tbody>                    
@@ -365,6 +356,42 @@
             </div>
           </div>
 
+          <!-- Reset Password Modal -->
+          <div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="resetPasswordModalLabel">Reset Password</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <form id="resetPasswordForm" method="POST" action="{% url 'reset_password' %}">
+                    {% csrf_token %}
+                    <input type="hidden" id="target_user_id" name="target_user_id" value="">
+                    <div class="mb-3">
+                      <label for="new_password" class="form-label">New Password</label>
+                      <div class="input-group">
+                        <input type="password" class="form-control" id="new_password" name="new_password" required>
+                        <button class="btn btn-outline-secondary" type="button" id="toggleNewPassword">👁️</button>
+                      </div>
+                    </div>
+                    <div class="mb-3">
+                      <label for="confirm_password" class="form-label">Confirm Password</label>
+                      <div class="input-group">
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">👁️</button>
+                      </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Set New Password</button>
+                  </form>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </main>
       </div>
     </div>
@@ -379,5 +406,21 @@
     <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'core/js/settings.js' %}"></script>
     <script src="{% static 'core/js/navigation.js' %}"></script>
+    
+    <!-- Feedback Link Script -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const feedbackLink = document.getElementById('feedbackLink');
+        if (feedbackLink) {
+          feedbackLink.addEventListener('click', function (e) {
+            e.preventDefault(); // prevents the default "#" behavior
+            window.open(
+              'https://docs.google.com/forms/d/e/1FAIpQLSf1BVWDcJlxRCJ79_XoL43ReEImc_w9frnOYIRh40CCVe9xOA/viewform',
+              '_blank'
+            );
+          });
+        }
+      });
+    </script>
   </body>
 </html>
