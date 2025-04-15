@@ -71,94 +71,112 @@ function filterOrders() {
     const startDateValue = document.getElementById("startDate").value;
     const endDateValue = document.getElementById("endDate").value;
     
+    console.log(`Filter inputs - Search: "${searchQuery}", Status: "${statusFilter}", Start: "${startDateValue}", End: "${endDateValue}"`);
+    
     // Select only rows that are order summaries, not details rows
     const rows = document.querySelectorAll("tbody tr.order-row"); 
 
     // Parse date range inputs once
     let startDate = null;
-    if (startDateValue) {
-        try {
-            startDate = new Date(startDateValue + 'T00:00:00'); // Ensure comparison starts at beginning of day
-            if (isNaN(startDate)) startDate = null; // Handle invalid date input
-        } catch (e) { startDate = null; }
-    }
     let endDate = null;
-    if (endDateValue) {
-        try {
-            endDate = new Date(endDateValue + 'T23:59:59'); // Ensure comparison ends at end of day
-             if (isNaN(endDate)) endDate = null;
-        } catch (e) { endDate = null; }
+    
+    if (startDateValue) {
+        // Convert to UTC to avoid timezone issues
+        const [year, month, day] = startDateValue.split('-').map(Number);
+        startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+        console.log(`Start date: ${startDateValue} -> ${startDate.toISOString()}`);
     }
-    console.log("Parsed Date Range:", { startDate, endDate });
+    
+    if (endDateValue) {
+        // Convert to UTC to avoid timezone issues
+        const [year, month, day] = endDateValue.split('-').map(Number);
+        endDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59));
+        console.log(`End date: ${endDateValue} -> ${endDate.toISOString()}`);
+    }
 
     rows.forEach((row, idx) => {
         // Get values from cells and data attributes
-        const orderNumber = row.cells[1].innerText.toLowerCase(); // Index 1 for Order ID
-        const supplierText = row.cells[2].innerText.toLowerCase(); // Index 2 for Supplier
-        const statusText = row.cells[5].innerText.toLowerCase().trim(); 
-        const productNames = row.dataset.products || ""; // Get product names from data attribute
-        const dateCreatedText = row.cells[3].innerText.trim(); // Index 3 for Date Created
+        const orderNumber = row.cells[1].innerText.toLowerCase();
+        const supplierText = row.cells[2].innerText.toLowerCase();
+        const statusText = row.cells[5].innerText.toLowerCase().trim();
+        const productNames = row.dataset.products || "";
         
-        // Date Parsing for Created Date
-        let orderCreatedDate = null;
-        if (dateCreatedText && dateCreatedText !== "N/A") {
-            try {
-                // Assuming format M/D/YYYY
-                const parts = dateCreatedText.split('/');
-                if (parts.length === 3) {
-                    // Month is 0-indexed in JS Date constructor
-                    orderCreatedDate = new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
-                     if (isNaN(orderCreatedDate)) orderCreatedDate = null; // Handle invalid date parts
-                } else {
-                     console.warn(`Row ${idx} unexpected date created format: ${dateCreatedText}`);
-                }
-            } catch(e) {
-                 console.warn(`Row ${idx} error parsing date created: ${dateCreatedText}`, e);
+        // Extract date texts
+        const createdDateText = row.cells[3].innerText.trim();
+        const deliveryDateText = row.cells[4].innerText.trim();
+        
+        console.log(`Row ${idx} - Order: ${orderNumber}, Created: ${createdDateText}, Delivery: ${deliveryDateText}`);
+        
+        // Parse delivery date (primary date for filtering)
+        let deliveryDate = null;
+        if (deliveryDateText && deliveryDateText !== "N/A") {
+            const [month, day, year] = deliveryDateText.split('/').map(Number);
+            if (month && day && year) {
+                // Use UTC to avoid timezone issues
+                deliveryDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+                console.log(`Row ${idx} - Parsed delivery date: ${deliveryDateText} -> ${deliveryDate.toISOString()}`);
             }
-        } else {
-            console.log(`Row ${idx} date created is N/A or empty`);
         }
         
-        // --- Filtering Logic --- 
+        // Parse created date (fallback for filtering)
+        let createdDate = null;
+        if (createdDateText && createdDateText !== "N/A") {
+            const [month, day, year] = createdDateText.split('/').map(Number);
+            if (month && day && year) {
+                // Use UTC to avoid timezone issues
+                createdDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+                console.log(`Row ${idx} - Parsed created date: ${createdDateText} -> ${createdDate.toISOString()}`);
+            }
+        }
         
-        // Date Filter (based on Created Date)
+        // --- Filtering Logic ---
+        
+        // DATE FILTER - prioritize delivery date, fall back to created date
         let matchesDate = true;
-        if (orderCreatedDate) {
-            if (startDate && endDate) {
-                matchesDate = (orderCreatedDate >= startDate && orderCreatedDate <= endDate);
-            } else if (startDate) {
-                matchesDate = (orderCreatedDate >= startDate);
-            } else if (endDate) {
-                matchesDate = (orderCreatedDate <= endDate);
+        
+        if (startDate || endDate) {
+            // Choose which date to filter against (prefer delivery date)
+            const dateToCheck = deliveryDate || createdDate;
+            
+            if (!dateToCheck) {
+                matchesDate = false;
+                console.log(`Row ${idx} - No valid date to check against filters`);
+            } else {
+                if (startDate && endDate) {
+                    matchesDate = dateToCheck >= startDate && dateToCheck <= endDate;
+                    console.log(`Row ${idx} - Date range check: ${dateToCheck.toISOString()} is between ${startDate.toISOString()} and ${endDate.toISOString()} = ${matchesDate}`);
+                } else if (startDate) {
+                    matchesDate = dateToCheck >= startDate;
+                    console.log(`Row ${idx} - Date after check: ${dateToCheck.toISOString()} >= ${startDate.toISOString()} = ${matchesDate}`);
+                } else if (endDate) {
+                    matchesDate = dateToCheck <= endDate;
+                    console.log(`Row ${idx} - Date before check: ${dateToCheck.toISOString()} <= ${endDate.toISOString()} = ${matchesDate}`);
+                }
             }
-        } else if (startDate || endDate) {
-             // If a date filter is set, but the row has no valid date, it doesn't match
-             matchesDate = false; 
         }
         
-        // Search Filter (Order ID, Supplier, Product Names)
+        // SEARCH FILTER
         const matchesSearch = 
             orderNumber.includes(searchQuery) || 
             supplierText.includes(searchQuery) ||
-            productNames.includes(searchQuery); // Search within product names
-            
-        // Status Filter
+            productNames.includes(searchQuery);
+        
+        // STATUS FILTER
         const matchesStatus = (statusFilter === "" || statusText === statusFilter);
         
-        // Combine filters
-        const finalMatch = (matchesSearch && matchesStatus && matchesDate);
-        console.log(`Row ${idx} - Search:'${searchQuery}', Status:'${statusFilter}', DateRange:[${startDateValue}-${endDateValue}] => Matches: Date=${matchesDate}, Search=${matchesSearch}, Status=${matchesStatus} => Final=${finalMatch}`);
+        // COMBINE FILTERS
+        const finalMatch = matchesSearch && matchesStatus && matchesDate;
+        console.log(`Row ${idx} - Final match: search=${matchesSearch}, status=${matchesStatus}, date=${matchesDate} => ${finalMatch}`);
         
-        // --- Set Row Visibility --- 
-        const detailsRow = document.getElementById('details-' + row.querySelector('.order-checkbox').value); // Find details row by ID
+        // --- Set Row Visibility ---
+        const detailsRow = document.getElementById('details-' + row.querySelector('.order-checkbox').value);
         
         if (finalMatch) {
-            row.style.display = ""; // Show main row
-            // Don't touch detailsRow.style.display here - let toggleDetails manage it
+            row.style.display = "";
         } else {
-            row.style.display = "none"; // Hide main row
+            row.style.display = "none";
             if (detailsRow) {
-                detailsRow.style.display = "none"; // Always hide details row if main row is hidden
+                detailsRow.style.display = "none";
             }
         }
     });
