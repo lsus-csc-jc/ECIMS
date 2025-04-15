@@ -237,28 +237,23 @@
           <div class="modal-dialog">
               <div class="modal-content">
                   <div class="modal-header">
-                      <h5 class="modal-title" id="addModalLabel">Add New Product</h5>
+                      <h5 class="modal-title" id="addModalLabel">Add New Products</h5>
                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                   </div>
                   <div class="modal-body">
-                      <form id="addForm">
-                          <div class="mb-3">
-                              <label for="addProduct" class="form-label">Product Name</label>
-                              <input type="text" class="form-control" id="addProduct">
-                          </div>
-                          <div class="mb-3">
-                              <label for="addQuantity" class="form-label">Quantity</label>
-                              <input type="number" class="form-control" id="addQuantity">
-                          </div>
-                          <div class="mb-3">
-                              <label for="addThreshold" class="form-label">Threshold</label>
-                              <input type="number" class="form-control" id="addThreshold">
-                          </div>
-                      </form>
+                      {% csrf_token %}
+                      <div id="addProductItems">
+                          <!-- Product rows will be added dynamically here -->
+                      </div>
+                      <div class="text-center mt-3">
+                          <button type="button" class="btn btn-outline-primary" id="addAnotherItem">
+                              <i class="fas fa-plus"></i>
+                          </button>
+                      </div>
                   </div>
                   <div class="modal-footer">
                       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                      <button type="button" class="btn btn-success" id="addEntry">Add</button>
+                      <button type="button" class="btn btn-success" id="addEntry">Add Products</button>
                   </div>
               </div>
           </div>
@@ -302,21 +297,21 @@
           <div class="modal-dialog modal-lg">
               <div class="modal-content">
                   <div class="modal-header">
-                      <h5 class="modal-title" id="importModalLabel">Import Products from Excel</h5>
+                      <h5 class="modal-title" id="importModalLabel">Import Products from CSV</h5>
                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                   </div>
                   <div class="modal-body">
                       <form id="importForm" method="post" enctype="multipart/form-data">
                           {% csrf_token %}
                           <div class="mb-3">
-                              <label for="excel_file" class="form-label">Select Excel File</label>
-                              <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".xlsx, .xls">
-                              <div class="form-text">File must be in Excel format (.xlsx or .xls)</div>
+                              <label for="excel_file" class="form-label">Select CSV File</label>
+                              <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".csv">
+                              <div class="form-text">File must be in CSV format (.csv)</div>
                           </div>
                           <div class="mb-3">
                               <h5>File Format Requirements:</h5>
                               <ul>
-                                  <li>The Excel file must contain columns for Product Name, Quantity, and Threshold (case-insensitive)</li>
+                                  <li>The CSV file must contain columns for Product Name, Quantity, and Threshold (case-insensitive)</li>
                                   <li>Product Name column: Can be named "Name", "Product Name", "Product", "Item Name", or "Item"</li>
                                   <li>Quantity column: Can be named "Quantity", "Qty", "Amount", or "Stock"</li>
                                   <li>Threshold column: Can be named "Threshold", "Min Stock", "Minimum", "Min Qty", or "Min Quantity"</li>

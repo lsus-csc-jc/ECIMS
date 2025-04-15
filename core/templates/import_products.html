@@ -9,7 +9,7 @@
         <div class="col-md-8 offset-md-2">
             <div class="card">
                 <div class="card-header">
-                    <h4>Import Products from Excel</h4>
+                    <h4>Import Products from CSV</h4>
                 </div>
                 <div class="card-body">
                     {% if messages %}
@@ -25,16 +25,15 @@
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label for="excel_file" class="form-label">Select Excel File</label>
-                            <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".xlsx, .xls">
-                            <div class="form-text">File must be in Excel format (.xlsx or .xls)</div>
+                            <label for="excel_file" class="form-label">Select CSV File</label>
+                            <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".csv">
+                            <div class="form-text">File must be in CSV format (.csv)</div>
                         </div>
                         <div class="mb-3">
                             <h5>File Format Requirements:</h5>
                             <ul>
-                                <li>The Excel file must contain these columns: Name, Description, Quantity, Threshold</li>
+                                <li>The CSV file must contain these columns: Name, Quantity, Threshold</li>
                                 <li>Name: Product name (required)</li>
-                                <li>Description: Product description (optional)</li>
                                 <li>Quantity: Current stock quantity (required, must be a number)</li>
                                 <li>Threshold: Low stock alert threshold (required, must be a number)</li>
                             </ul>

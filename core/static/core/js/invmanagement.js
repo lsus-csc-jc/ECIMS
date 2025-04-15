@@ -9,6 +9,67 @@ $(document).ready(function () {
     const selectAllCheckbox = $('#selectAllInvItems');
     const bulkDeleteBtn = $('#bulkDeleteInvBtn');
 
+    // --- Add Product Modal Elements ---
+    const addProductItems = $('#addProductItems');
+    const addAnotherItemBtn = $('#addAnotherItem');
+
+    // Function to add a new product item row
+    function addProductItemRow() {
+        // Create a new product item row
+        const newRow = `
+            <div class="product-item mb-3">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <label class="form-label">Product Name</label>
+                        <input type="text" class="form-control product-name" required>
+                    </div>
+                    <div class="col">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-control product-quantity" value="0" min="0" required>
+                    </div>
+                    <div class="col">
+                        <label class="form-label">Threshold</label>
+                        <input type="number" class="form-control product-threshold" value="0" min="0" required>
+                    </div>
+                    <div class="col-auto">
+                        <button type="button" class="btn btn-outline-danger remove-item mt-4">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Append the new row to the container
+        addProductItems.append(newRow);
+        
+        // Enable/disable remove buttons based on number of items
+        updateRemoveButtons();
+    }
+
+    // Function to update remove buttons state
+    function updateRemoveButtons() {
+        const removeButtons = $('.remove-item');
+        
+        // If there's only one item, disable the remove button
+        if (removeButtons.length <= 1) {
+            removeButtons.prop('disabled', true);
+        } else {
+            removeButtons.prop('disabled', false);
+        }
+    }
+
+    // Handle click on "Add Another Item" button
+    addAnotherItemBtn.on('click', function() {
+        addProductItemRow();
+    });
+
+    // Handle click on remove item button (using event delegation)
+    $(document).on('click', '.remove-item', function() {
+        $(this).closest('.product-item').remove();
+        updateRemoveButtons();
+    });
+
     function getViewedLowStockIds() {
         return new Set(JSON.parse(localStorage.getItem("viewedLowStockIds") || "[]"));
     }
@@ -252,44 +313,100 @@ $(document).ready(function () {
         });
     });
 
+    // Updated Add Entry click handler
     $("#addEntry").click(async function () {
-        let productName = $("#addProduct").val().trim();
-        let productQuantity = parseInt($("#addQuantity").val());
-        let productThreshold = parseInt($("#addThreshold").val());
+        const productItems = $('.product-item');
+        const productsToAdd = [];
+        
+        // Validate and collect data from each product item row
+        let isValid = true;
+        
+        productItems.each(function() {
+            const productName = $(this).find('.product-name').val().trim();
+            const productQuantity = parseInt($(this).find('.product-quantity').val());
+            const productThreshold = parseInt($(this).find('.product-threshold').val());
 
-        if (!productName || productQuantity < 0 || productThreshold < 0) {
-            alert("⚠️ All fields are required!");
+            if (!productName) {
+                $(this).find('.product-name').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $(this).find('.product-name').removeClass('is-invalid');
+            }
+            
+            if (isNaN(productQuantity) || productQuantity < 0) {
+                $(this).find('.product-quantity').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $(this).find('.product-quantity').removeClass('is-invalid');
+            }
+            
+            if (isNaN(productThreshold) || productThreshold < 0) {
+                $(this).find('.product-threshold').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $(this).find('.product-threshold').removeClass('is-invalid');
+            }
+            
+            if (productName && !isNaN(productQuantity) && !isNaN(productThreshold)) {
+                productsToAdd.push({
+                    name: productName,
+                    quantity: productQuantity,
+                    threshold: productThreshold
+                });
+            }
+        });
+        
+        if (!isValid) {
+            showNotification('Please fill in all required fields correctly.', false);
+            return;
+        }
+        
+        if (productsToAdd.length === 0) {
+            showNotification('No valid products to add!', false);
             return;
         }
 
-        const newProduct = {
-            name: productName,
-            quantity: productQuantity,
-            threshold: productThreshold
-        };
-
         try {
-            const response = await fetch(apiUrl, {
+            const response = await fetch("/inventory/add/", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "X-CSRFToken": getCSRFToken()
                 },
-                body: JSON.stringify(newProduct)
+                body: JSON.stringify(productsToAdd)
             });
 
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
-            await fetchInventoryData(true);
-            $("#addModal").modal("hide");
-            $("#addForm")[0].reset();
-            console.log("✅ Product Added Successfully!");
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                await fetchInventoryData(true);
+                $("#addModal").modal("hide");
+                
+                // Reset the form
+                addProductItems.html('');
+                addProductItemRow(); // Add a single empty row
+                
+                showNotification(`Successfully added ${productsToAdd.length} product(s)!`, true);
+                console.log("✅ Products Added Successfully!");
+            } else {
+                showNotification(result.error || 'Failed to add products', false);
+            }
         } catch (error) {
-            console.error("❌ Error adding product:", error);
-            alert("Failed to add product. Please try again.");
+            console.error("❌ Error adding products:", error);
+            showNotification('Failed to add products. Please try again.', false);
         }
     });
 
+    // Initialize the first product item row when page loads
+    $(document).on('show.bs.modal', '#addModal', function() {
+        // Clear previous items and add one fresh row when modal opens
+        addProductItems.empty();
+        addProductItemRow();
+    });
+
+    // Handle click events on edit buttons
     $(document).on("click", ".edit-btn", function () {
         let row = $(this).closest("tr");
         let productId = row.data("id");
@@ -305,6 +422,7 @@ $(document).ready(function () {
         $("#editModal").modal("show");
     });
 
+    // Save changes button click handler
     $("#saveChanges").click(async function () {
         let productId = $("#editRowIndex").val();
         let updatedName = $("#editProduct").val().trim();
@@ -344,17 +462,35 @@ $(document).ready(function () {
     });
 
     function getCSRFToken() {
+        // Try to get from cookie first
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
             const cookies = document.cookie.split(';');
             for (let i = 0; i < cookies.length; i++) {
                 const cookie = cookies[i].trim();
-                if (cookie.startsWith('csrftoken=')) {
-                    cookieValue = cookie.substring('csrftoken='.length, cookie.length);
+                if (cookie.substring(0, 'csrftoken='.length) === 'csrftoken=') {
+                    cookieValue = decodeURIComponent(cookie.substring('csrftoken='.length));
                     break;
                 }
             }
         }
+        
+        // If not in cookie, try to get from meta tag
+        if (!cookieValue) {
+            const csrfElement = document.querySelector('meta[name="csrf-token"]');
+            if (csrfElement) {
+                cookieValue = csrfElement.getAttribute('content');
+            }
+        }
+        
+        // If still not found, try hidden input field
+        if (!cookieValue) {
+            const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+            if (csrfInput) {
+                cookieValue = csrfInput.value;
+            }
+        }
+        
         return cookieValue;
     }
 

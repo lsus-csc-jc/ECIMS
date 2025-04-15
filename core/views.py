@@ -343,12 +343,53 @@ def view_inventory(request):
 
 
 @allowed_roles(roles=['Employee'])
+@csrf_exempt
+@login_required
 def add_inventory_item(request):
-    # Logic to add an inventory item
+    """API endpoint to add a new inventory item"""
     if request.method == 'POST':
-        # Process form data (implement your logic here)
-        pass
-    return render(request, 'add_inventory.html')
+        try:
+            data = json.loads(request.body)
+            
+            # Check if the data is a single item or an array of items
+            if isinstance(data, list):
+                # Handle multiple items
+                created_items = []
+                for item_data in data:
+                    item = InventoryItem.objects.create(
+                        name=item_data['name'],
+                        quantity=item_data['quantity'],
+                        threshold=item_data['threshold']
+                    )
+                    created_items.append({
+                        'id': item.id,
+                        'name': item.name,
+                        'quantity': item.quantity,
+                        'threshold': item.threshold,
+                        'status': item.status,
+                        'status_text': item.get_status_display()
+                    })
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Successfully added {len(created_items)} items',
+                    'items': created_items
+                })
+            else:
+                # Handle single item
+                item = InventoryItem.objects.create(
+                    name=data['name'],
+                    quantity=data['quantity'],
+                    threshold=data['threshold']
+                )
+                return JsonResponse({
+                    'success': True,
+                    'id': item.id,
+                    'status': item.status,
+                    'status_text': item.get_status_display()
+                })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
 
 
 @allowed_roles(roles=['Manager'])
@@ -632,27 +673,27 @@ def import_products(request):
                     'error': 'Please select a file to upload'
                 })
                 
-            if not excel_file.name.endswith(('.xls', '.xlsx')):
+            if not excel_file.name.endswith('.csv'):
                 return JsonResponse({
                     'success': False,
-                    'error': 'Invalid file format. Please upload an Excel file (.xls or .xlsx)'
+                    'error': 'Invalid file format. Please upload a CSV file (.csv)'
                 })
 
-            # Read the Excel file
+            # Read the CSV file
             try:
-                df = pd.read_excel(excel_file)
+                df = pd.read_csv(excel_file)
                 print(f"DataFrame head:\n{df.head()}")  # Debug print
                 print(f"DataFrame columns: {df.columns.tolist()}")  # Debug print
             except Exception as e:
                 return JsonResponse({
                     'success': False,
-                    'error': f'Error reading Excel file: {str(e)}. Please make sure the file is not corrupted and is a valid Excel file.'
+                    'error': f'Error reading CSV file: {str(e)}. Please make sure the file is not corrupted and is a valid CSV file.'
                 })
 
             if df.empty:
                 return JsonResponse({
                     'success': False,
-                    'error': 'The Excel file is empty. Please add some data.'
+                    'error': 'The CSV file is empty. Please add some data.'
                 })
 
             # Convert all column names to lowercase for easier matching
@@ -774,26 +815,20 @@ def download_template(request):
     # Create a sample DataFrame with standard column names
     data = {
         'Product Name': ['Laptop Dell XPS 13', 'HP Printer Ink Cartridge'],
-        'SKU': ['LAP-001', 'INK-001'],
-        'Category': ['Electronics', 'Supplies'],
-        'Description': ['13-inch laptop with Intel i7', 'Black ink cartridge'],
         'Quantity': [25, 100],
-        'Reorder Threshold': [5, 20],
-        'Price': [1299.99, 29.99],
-        'Supplier': ['Dell Inc.', 'HP Inc.'],
-        'Status': ['In Stock', 'In Stock']
+        'Threshold': [5, 20]
     }
     df = pd.DataFrame(data)
     
-    # Create the Excel file in memory
-    excel_file = io.BytesIO()
-    df.to_excel(excel_file, index=False, engine='openpyxl')
-    excel_file.seek(0)
+    # Create the CSV file in memory
+    csv_file = io.StringIO()
+    df.to_csv(csv_file, index=False)
+    csv_file.seek(0)
     
     # Create the HTTP response
-    response = HttpResponse(excel_file.read(),
-                          content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename=inventory_template.xlsx'
+    response = HttpResponse(csv_file.getvalue(),
+                          content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=inventory_template.csv'
     
     return response
 
@@ -811,28 +846,6 @@ def get_inventory_items(request):
         'status_text': item.get_status_display()
     } for item in items]
     return JsonResponse(data, safe=False)
-
-@login_required
-@csrf_exempt
-def add_inventory_item(request):
-    """API endpoint to add a new inventory item"""
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            item = InventoryItem.objects.create(
-                name=data['name'],
-                quantity=data['quantity'],
-                threshold=data['threshold']
-            )
-            return JsonResponse({
-                'success': True,
-                'id': item.id,
-                'status': item.status,
-                'status_text': item.get_status_display()
-            })
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
 
 @login_required
 @csrf_exempt
