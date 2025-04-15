@@ -91,7 +91,13 @@ $(document).ready(function () {
                 </tr>`;
             tableBody.append(row);
         });
+
+        // Reset select all checkbox
+        selectAllCheckbox.prop('checked', false);
+        
+        // Attach checkbox listeners after table is populated
         attachCheckboxListeners();
+        
         console.log("✅ Table Updated Successfully!");
     }
 
@@ -144,25 +150,43 @@ $(document).ready(function () {
     // --- Checkbox & Bulk Action Logic --- 
 
     function attachCheckboxListeners() {
+        // Remove existing listeners first
         selectAllCheckbox.off('change');
         tableBody.off('change', '.inv-item-checkbox'); 
 
-        if (selectAllCheckbox.length && tableBody.find('.inv-item-checkbox').length > 0) {
+        // Get current checkboxes
+        const itemCheckboxes = tableBody.find('.inv-item-checkbox');
+        
+        // Only attach listeners if we have both the select all checkbox and at least one item checkbox
+        if (selectAllCheckbox.length && itemCheckboxes.length > 0) {
+            // Select All checkbox handler
             selectAllCheckbox.on('change', function() {
-                tableBody.find('.inv-item-checkbox').prop('checked', this.checked);
+                itemCheckboxes.prop('checked', this.checked);
+                updateBulkDeleteButton();
             });
-        } else {
-            console.warn("Select All checkbox or item checkboxes not found when attaching listeners.");
-        }
 
-        tableBody.on('change', '.inv-item-checkbox', function() {
-            if (!this.checked) {
-                selectAllCheckbox.prop('checked', false);
-            }
-             updateSelectAllCheckboxState();
-        });
+            // Individual checkbox handlers
+            tableBody.on('change', '.inv-item-checkbox', function() {
+                // Uncheck select all if any checkbox is unchecked
+                if (!this.checked) {
+                    selectAllCheckbox.prop('checked', false);
+                }
+                // Check if all checkboxes are checked
+                const allChecked = itemCheckboxes.length === tableBody.find('.inv-item-checkbox:checked').length;
+                selectAllCheckbox.prop('checked', allChecked);
+                updateBulkDeleteButton();
+            });
+
+            // Update initial state
+            updateBulkDeleteButton();
+        }
     }
-    
+
+    function updateBulkDeleteButton() {
+        const selectedCount = tableBody.find('.inv-item-checkbox:checked').length;
+        bulkDeleteBtn.prop('disabled', selectedCount === 0);
+    }
+
     function updateSelectAllCheckboxState() {
          const allCheckboxes = tableBody.find('.inv-item-checkbox');
          const allChecked = allCheckboxes.length > 0 && allCheckboxes.length === tableBody.find('.inv-item-checkbox:checked').length;
@@ -339,7 +363,6 @@ $(document).ready(function () {
 
     // Set interval for background refresh - pass false to prevent alert popups
     setInterval(() => fetchInventoryData(false), 15000);
-    attachCheckboxListeners();
 
     // --- Tour Logic Removed ---
 

@@ -195,9 +195,14 @@
       <div class="container mt-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
               <input type="text" id="searchInput" class="form-control w-50" placeholder="Search Items">
-              <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
-                  <i class="fas fa-plus"></i> Add Item
-              </button>
+              <div class="d-flex gap-2">
+                  <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importModal">
+                      <i class="fas fa-file-import"></i> Import Products
+                  </button>
+                  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+                      <i class="fas fa-plus"></i> Add Item
+                  </button>
+              </div>
           </div>
           <div class="table-responsive">
           <table class="table table-hover">
@@ -287,6 +292,45 @@
           </div>
       </div>   
 
+      <!-- Import Products Modal -->
+      <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title" id="importModalLabel">Import Products from Excel</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                      <form id="importForm" method="post" enctype="multipart/form-data">
+                          {% csrf_token %}
+                          <div class="mb-3">
+                              <label for="excel_file" class="form-label">Select Excel File</label>
+                              <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".xlsx, .xls">
+                              <div class="form-text">File must be in Excel format (.xlsx or .xls)</div>
+                          </div>
+                          <div class="mb-3">
+                              <h5>File Format Requirements:</h5>
+                              <ul>
+                                  <li>The Excel file must contain columns for Product Name, Quantity, and Threshold (case-insensitive)</li>
+                                  <li>Product Name column: Can be named "Name", "Product Name", "Product", "Item Name", or "Item"</li>
+                                  <li>Quantity column: Can be named "Quantity", "Qty", "Amount", or "Stock"</li>
+                                  <li>Threshold column: Can be named "Threshold", "Min Stock", "Minimum", "Min Qty", or "Min Quantity"</li>
+                                  <li>Quantity and Threshold must be positive numbers</li>
+                              </ul>
+                          </div>
+                          <div class="alert alert-success d-none" id="importSuccess"></div>
+                          <div class="alert alert-danger d-none" id="importError"></div>
+                          <div class="d-flex justify-content-between">
+                              <button type="submit" class="btn btn-primary" id="uploadBtn">Upload and Import</button>
+                              <a href="{% url 'download_template' %}" class="btn btn-outline-secondary">
+                                  Download Template
+                              </a>
+                          </div>
+                      </form>
+                  </div>
+              </div>
+          </div>
+      </div>
 
           <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
           <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
@@ -296,5 +340,206 @@
           <script src="{% static 'core/js/invmanagement.js' %}"></script>
           <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
           {% include 'low_stock_alert.html' %}
+
+          <script>
+          // Function to get CSRF token from cookies
+          function getCSRFToken() {
+              const name = 'csrftoken';
+              let cookieValue = null;
+              if (document.cookie && document.cookie !== '') {
+                  const cookies = document.cookie.split(';');
+                  for (let i = 0; i < cookies.length; i++) {
+                      const cookie = cookies[i].trim();
+                      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                          break;
+                      }
+                  }
+              }
+              return cookieValue;
+          }
+
+          // Function to handle checkbox functionality
+          function attachCheckboxListeners() {
+              const selectAllCheckbox = $('#selectAllInvItems');
+              const itemCheckboxes = $('.inv-item-checkbox');
+              const bulkDeleteBtn = $('#bulkDeleteInvBtn');
+
+              // Handle "Select All" checkbox
+              selectAllCheckbox.off('change').on('change', function() {
+                  itemCheckboxes.prop('checked', this.checked);
+                  updateBulkDeleteButton();
+              });
+
+              // Handle individual checkboxes
+              itemCheckboxes.off('change').on('change', function() {
+                  const allChecked = itemCheckboxes.length === itemCheckboxes.filter(':checked').length;
+                  selectAllCheckbox.prop('checked', allChecked);
+                  updateBulkDeleteButton();
+              });
+
+              // Update bulk delete button state
+              function updateBulkDeleteButton() {
+                  const checkedCount = itemCheckboxes.filter(':checked').length;
+                  bulkDeleteBtn.prop('disabled', checkedCount === 0);
+              }
+
+              // Initial button state
+              updateBulkDeleteButton();
+
+              // Handle bulk delete
+              bulkDeleteBtn.off('click').on('click', async function() {
+                  const selectedIds = [];
+                  $('.inv-item-checkbox:checked').each(function() {
+                      selectedIds.push($(this).val());
+                  });
+
+                  if (selectedIds.length === 0) {
+                      alert('Please select items to delete');
+                      return;
+                  }
+
+                  if (confirm(`Are you sure you want to delete ${selectedIds.length} selected item(s)?`)) {
+                      try {
+                          const response = await fetch('/inventory/bulk_delete/', {
+                              method: 'POST',
+                              headers: {
+                                  'Content-Type': 'application/json',
+                                  'X-CSRFToken': getCSRFToken()
+                              },
+                              body: JSON.stringify({ item_ids: selectedIds })
+                          });
+
+                          const result = await response.json();
+                          if (result.success) {
+                              // Show success message
+                              alert(result.message || 'Items deleted successfully');
+                              // Refresh the table
+                              await fetchInventoryData();
+                              // Reset select all checkbox
+                              selectAllCheckbox.prop('checked', false);
+                          } else {
+                              alert('Error: ' + (result.error || 'Failed to delete items'));
+                          }
+                      } catch (error) {
+                          console.error('Error:', error);
+                          alert('An error occurred while deleting items');
+                      }
+                  }
+              });
+          }
+
+          // Function to fetch and update inventory data
+          async function fetchInventoryData() {
+              try {
+                  const response = await fetch('{% url "get_inventory_items" %}');
+                  if (!response.ok) {
+                      throw new Error(`HTTP error! status: ${response.status}`);
+                  }
+                  const data = await response.json();
+                  
+                  // Clear the table body
+                  const tableBody = $('#tableBody');
+                  tableBody.empty();
+                  
+                  // Add each item to the table
+                  data.forEach(item => {
+                      let statusBadge;
+                      switch (item.status) {
+                          case 3:
+                              statusBadge = `<span class="badge bg-success">In-Stock</span>`;
+                              break;
+                          case 2:
+                              statusBadge = `<span class="badge bg-warning text-dark">Low-Stock</span>`;
+                              break;
+                          case 1:
+                              statusBadge = `<span class="badge bg-danger">Out-of-Stock</span>`;
+                              break;
+                          default:
+                              statusBadge = `<span class="badge bg-secondary">Unknown</span>`;
+                      }
+
+                      const row = `
+                          <tr data-id="${item.id}">
+                              <td>
+                                  <input type="checkbox" class="form-check-input inv-item-checkbox" value="${item.id}">
+                              </td>
+                              <td>${item.name}</td>
+                              <td>${item.quantity}</td>
+                              <td>${item.threshold}</td>
+                              <td>${statusBadge}</td>
+                              <td>
+                                  <button class="btn btn-sm btn-outline-primary edit-btn">
+                                      <i class="fas fa-edit"></i>
+                                  </button>
+                              </td>
+                          </tr>
+                      `;
+                      tableBody.append(row);
+                  });
+
+                  // Reattach event listeners
+                  attachCheckboxListeners();
+                  
+              } catch (error) {
+                  console.error('Error fetching inventory data:', error);
+                  // Optionally show an error message to the user
+                  alert('Error refreshing inventory data. Please refresh the page.');
+              }
+          }
+
+          $(document).ready(function() {
+              // Initial fetch of inventory data
+              fetchInventoryData();
+
+              // Handle import form submission
+              $('#importForm').on('submit', async function(e) {
+                  e.preventDefault();
+                  
+                  const formData = new FormData(this);
+                  const uploadBtn = $('#uploadBtn');
+                  const successAlert = $('#importSuccess');
+                  const errorAlert = $('#importError');
+                  
+                  // Reset alerts
+                  successAlert.addClass('d-none').text('');
+                  errorAlert.addClass('d-none').text('');
+                  
+                  // Disable button and show loading state
+                  uploadBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Importing...');
+                  
+                  try {
+                      const response = await fetch('{% url "import_products" %}', {
+                          method: 'POST',
+                          body: formData,
+                          headers: {
+                              'X-CSRFToken': getCSRFToken()
+                          }
+                      });
+                      
+                      const result = await response.json();
+                      if (result.success) {
+                          successAlert.removeClass('d-none').text(result.message);
+                          // Refresh the inventory table
+                          await fetchInventoryData();
+                          // Close modal after 2 seconds
+                          setTimeout(() => {
+                              $('#importModal').modal('hide');
+                              // Reset form
+                              $('#importForm')[0].reset();
+                          }, 2000);
+                      } else {
+                          errorAlert.removeClass('d-none').text(result.error);
+                      }
+                  } catch (error) {
+                      console.error('Error:', error);
+                      errorAlert.removeClass('d-none').text('An error occurred while importing products.');
+                  } finally {
+                      // Re-enable button and restore text
+                      uploadBtn.prop('disabled', false).html('Upload and Import');
+                  }
+              });
+          });
+          </script>
 </body>
 </html>

@@ -1,116 +1,167 @@
 /* General styles */
 body {
     font-family: 'Inter', sans-serif;
-    background-color:white; /* Light background for contrast */
+    background-color: white;
     margin: 0;
     padding: 0;
 }
 
 .left-section {
-    background-color:white; /* Dark blue for ECIMS branding */
+    background-color: rgb(30, 55, 85);
     color: white;
-    padding: 30px;
+    padding: 2rem;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .ecims-title {
     font-family: 'Aldrich', sans-serif;
-    font-size: 8rem;
+    font-size: 7rem;
+    color: white;
+    margin-bottom: 1rem;
 }
 
 .subtitle {
-    font-size: 1rem;
+    font-size: 1.2rem;
     font-weight: 400;
     text-align: center;
-    margin-top: 10px;
     max-width: 80%;
-    margin-left: auto;
-    margin-right: auto;
+    color: white;
+    opacity: 0.9;
 }
 
 .right-section {
-    background-color:white; /* Dark background for the form */
-    padding: 20px;
+    background-color: white;
+    min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-
-/* Form fields */
-.form-control {
-    border-radius: 10px;
-    border: 1px solid #ddd; /* Subtle border for input fields */
-    padding: 10px;
+/* Form styles */
+.login-container {
+    max-width: 400px;
+    width: 100%;
+    padding: 2rem;
 }
 
-/* Responsive layout adjustments */
+h2 {
+    font-weight: 600;
+    color: #1a1a1a;
+    font-size: 1.75rem;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.form-control {
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+    border-color: rgb(30, 55, 85);
+    box-shadow: 0 0 0 0.2rem rgba(30, 55, 85, 0.25);
+}
+
+.form-control::placeholder {
+    color: #6c757d;
+    opacity: 0.8;
+}
+
+.btn-primary {
+    background-color: rgb(30, 55, 85);
+    border: none;
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+    border-radius: 4px;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.btn-primary:hover {
+    background-color: rgb(20, 40, 65);
+}
+
+.text-primary {
+    color: rgb(30, 55, 85) !important;
+}
+
+a {
+    text-decoration: none;
+    color: rgb(30, 55, 85);
+    transition: color 0.15s ease-in-out;
+    font-weight: 500;
+}
+
+a:hover {
+    color: rgb(20, 40, 65);
+    text-decoration: underline;
+}
+
+/* Alert styles */
+.alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.alert-danger ul {
+    margin-bottom: 0;
+}
+
+.alert-danger li {
+    margin-bottom: 0.25rem;
+}
+
+.alert-danger li:last-child {
+    margin-bottom: 0;
+}
+
+/* Responsive styles */
 @media (max-width: 768px) {
     .ecims-title {
         font-size: 4rem;
     }
 
-    .left-section {
-        padding: 20px;
-    }
-
-    .login-form {
-        padding: 20px;
-        max-width: 75%;
-    }
-
-    .form-outline input {
-        padding: 10px;
+    .subtitle {
         font-size: 1rem;
     }
 
-    .form-check-label {
-        font-size: 0.9rem;
+    .login-container {
+        padding: 1.5rem;
     }
 }
 
 @media (max-width: 576px) {
-    .ecims-title {
-        font-size: 3.5rem;
-    }
-
-    .login-form {
-        padding: 15px;
-    }
-
-    .form-outline input {
-        padding: 8px;
-        font-size: 0.95rem;
-    }
-
-    .btn {
-        padding: 10px;
-        font-size: 1rem;
-    }
-
-    .form-check-label {
-        font-size: 0.8rem;
-    }
-
     .left-section {
         display: none;
     }
-}
-/* Ensure left section does not take too much space on small screens */
-@media (max-width: 576px) {
-    .left-section {
-        display: none; /* Hide branding on small screens for better spacing */
-    }
+
     .right-section {
-        width: 100% !important;
+        padding: 1rem;
+    }
+
+    .login-container {
+        padding: 1.5rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
     }
 }
 
-/* Adjust input fields and buttons for better mobile experience */
-.login-container {
-    width: 100%;
-    max-width: 350px; /* Optimized for iPhone SE */
-    padding: 20px;
-}
 /* Social Media Buttons */
 .btn-floating {
     width: 40px;
@@ -122,25 +173,18 @@ body {
     justify-content: center;
     align-items: center;
 }
+
 .text-white {
     --bs-text-opacity: 1;
     color: #003366 !important;
 }
+
 .btn-floating i {
     color: white;
 }
 
 .btn-secondary {
     background-color: #6c757d;
-}
-
-.btn-primary {
-    background-color: #003366;
-    border: none;
-}
-
-.btn-primary:hover {
-    background-color: #002244;
 }
 
 .btn-light {
@@ -157,8 +201,4 @@ body {
 /* Additional spacing for links and bottom text */
 .text-center a {
     text-decoration: none;
-}
-
-.text-primary {
-    color: #003366;
 }

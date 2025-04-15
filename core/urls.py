@@ -6,7 +6,11 @@ from .views import (
     reset_password, delete_user, edit_user, update_user, update_order, 
     get_suppliers, delete_order, 
     bulk_delete_orders, bulk_update_order_status,
-    bulk_delete_inventory_items
+    bulk_delete_inventory_items,
+    import_products,
+    download_template,
+    get_inventory_items,
+    update_inventory_item
 )
 
 urlpatterns = [
@@ -35,4 +39,10 @@ urlpatterns = [
     path('orders/bulk_delete/', bulk_delete_orders, name='bulk_delete_orders'),
     path('orders/bulk_update_status/', bulk_update_order_status, name='bulk_update_order_status'),
     path('inventory/bulk_delete/', bulk_delete_inventory_items, name='bulk_delete_inventory_items'),
+    path('import-products/', import_products, name='import_products'),
+    path('download-template/', download_template, name='download_template'),
+    path('api/v1/items/', get_inventory_items, name='get_inventory_items'),
+    path('api/v1/items/add/', add_inventory_item, name='add_inventory_item'),
+    path('api/v1/items/<int:item_id>/', update_inventory_item, name='update_inventory_item'),
+    path('api/v1/items/<int:item_id>/delete/', delete_inventory_item, name='delete_inventory_item'),
 ]

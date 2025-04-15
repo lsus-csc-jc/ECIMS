@@ -49,33 +49,30 @@ class InventoryItem(models.Model):
         OUTOFSTOCK: "Out of Stock",
         UNKNOWN: "Unknown"
     }
+
     name = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    quantity = models.PositiveIntegerField(default=0)
-    threshold = models.PositiveIntegerField(default=0)
-    #supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='inventory_items')
-    status = models.PositiveSmallIntegerField(choices=INV_STATUS_CHOICES, default=UNKNOWN)
+    quantity = models.IntegerField(default=0)
+    threshold = models.IntegerField(default=0)
+    status = models.IntegerField(choices=INV_STATUS_CHOICES.items(), default=UNKNOWN)
     date_modified = models.DateTimeField(auto_now=True)
     date_added = models.DateTimeField(auto_now_add=True)
 
-    def calculate_inv_status(self):
-        if self.threshold > 0:
-            if self.quantity == 0:
-                return self.OUTOFSTOCK
-            if self.quantity <= self.threshold:
-                return self.LOWSTOCK
-            else:
-                return self.INSTOCK
-        else:
-            return self.UNKNOWN
-        
-    def save(self, *args, **kwargs):
-        self.status = self.calculate_inv_status()
-        super().save(*args, **kwargs)
-
     def __str__(self):
         return self.name
-    
+
+    def save(self, *args, **kwargs):
+        # Update status based on quantity and threshold
+        if self.quantity <= 0:
+            self.status = self.OUTOFSTOCK
+        elif self.quantity <= self.threshold:
+            self.status = self.LOWSTOCK
+        else:
+            self.status = self.INSTOCK
+        super().save(*args, **kwargs)
+
+    def get_status_display(self):
+        return self.INV_STATUS_CHOICES.get(self.status, "Unknown")
+
     class Meta:
         ordering = ['name']
 

@@ -4,7 +4,7 @@ from django.contrib.auth import login, logout, get_user_model, update_session_au
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, HttpResponseForbidden
+from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from core.models import Profile
@@ -12,12 +12,13 @@ import json
 import uuid
 from .decorators import allowed_roles
 from .roles import ROLE_SETTINGS_ACCESS, ROLE_INVENTORY_ACCESS, ROLE_ORDERS_ACCESS
-from django.http import JsonResponse
 from .forms import SignUpForm  # Import the fixed signup form
 from .models import Order, Supplier, Profile, InventoryItem, OrderItem
 import logging
 from django.db import transaction, IntegrityError
 from django.db.models import Count, Q # Import Q for complex lookups
+import pandas as pd
+import io
 
 # Get an instance of a logger
 # logger = logging.getLogger(__name__) # Removing logger for simplification
@@ -619,3 +620,254 @@ def bulk_delete_inventory_items(request):
         # Log error in a real application
         # logger.exception("Error during bulk inventory item deletion:")
         return JsonResponse({'success': False, 'error': f'An unexpected error occurred: {str(e)}'}, status=500)
+
+@csrf_exempt
+def import_products(request):
+    if request.method == 'POST':
+        try:
+            excel_file = request.FILES.get('excel_file')
+            if not excel_file:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Please select a file to upload'
+                })
+                
+            if not excel_file.name.endswith(('.xls', '.xlsx')):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid file format. Please upload an Excel file (.xls or .xlsx)'
+                })
+
+            # Read the Excel file
+            try:
+                df = pd.read_excel(excel_file)
+                print(f"DataFrame head:\n{df.head()}")  # Debug print
+                print(f"DataFrame columns: {df.columns.tolist()}")  # Debug print
+            except Exception as e:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Error reading Excel file: {str(e)}. Please make sure the file is not corrupted and is a valid Excel file.'
+                })
+
+            if df.empty:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'The Excel file is empty. Please add some data.'
+                })
+
+            # Convert all column names to lowercase for easier matching
+            df.columns = df.columns.str.lower().str.strip()
+            
+            # Define possible variations for each required field
+            name_variations = ['name', 'product', 'item', 'product name', 'item name', 'productname', 'itemname', 'title', 'description']
+            quantity_variations = ['quantity', 'qty', 'amount', 'stock', 'count', 'number', 'total', 'inventory']
+            threshold_variations = ['threshold', 'minimum', 'min', 'reorder', 'reorder point', 'minimum stock', 'min stock', 'reorder level']
+
+            # Find the best matching columns
+            name_col = None
+            quantity_col = None
+            threshold_col = None
+
+            for col in df.columns:
+                col_lower = col.lower().strip()
+                # Try to match name column
+                if not name_col and any(variation in col_lower for variation in name_variations):
+                    name_col = col
+                # Try to match quantity column
+                elif not quantity_col and any(variation in col_lower for variation in quantity_variations):
+                    quantity_col = col
+                # Try to match threshold column
+                elif not threshold_col and any(variation in col_lower for variation in threshold_variations):
+                    threshold_col = col
+
+            # If we still don't have matches, try to use positional matching as fallback
+            if not name_col and len(df.columns) >= 1:
+                name_col = df.columns[0]  # First column is usually the name
+            if not quantity_col and len(df.columns) >= 2:
+                quantity_col = df.columns[1]  # Second column is usually quantity
+            if not threshold_col and len(df.columns) >= 3:
+                threshold_col = df.columns[2]  # Third column could be threshold
+
+            # Process each row
+            success_count = 0
+            error_count = 0
+            errors = []
+            
+            # Skip empty rows
+            df = df.dropna(how='all')
+            
+            for index, row in df.iterrows():
+                try:
+                    # Get and validate name
+                    name = str(row[name_col]).strip() if name_col else None
+                    if not name or pd.isna(name) or name.lower() == name_col.lower():
+                        continue
+
+                    # Get and validate quantity and threshold
+                    try:
+                        # Handle quantity
+                        quantity = row[quantity_col] if quantity_col else 0
+                        if pd.isna(quantity):
+                            quantity = 0
+                        if isinstance(quantity, str):
+                            quantity = quantity.replace(',', '').strip()
+                        quantity = int(float(quantity))
+                        if quantity < 0:
+                            quantity = 0
+
+                        # Handle threshold
+                        threshold = row[threshold_col] if threshold_col else 0
+                        if pd.isna(threshold):
+                            threshold = 0
+                        if isinstance(threshold, str):
+                            threshold = threshold.replace(',', '').strip()
+                        threshold = int(float(threshold))
+                        if threshold < 0:
+                            threshold = 0
+                            
+                    except (ValueError, TypeError) as e:
+                        # If there's an error with quantity or threshold, set them to 0
+                        quantity = 0
+                        threshold = 0
+
+                    print(f"Processing row {index + 1}: Name='{name}', Quantity={quantity}, Threshold={threshold}")  # Debug log
+
+                    # Create or update inventory item
+                    item, created = InventoryItem.objects.update_or_create(
+                        name=name,
+                        defaults={
+                            'quantity': quantity,
+                            'threshold': threshold
+                        }
+                    )
+                    success_count += 1
+                    
+                except Exception as e:
+                    error_count += 1
+                    error_msg = f"Row {index + 1}: {str(e)}"
+                    print(f"Error: {error_msg}")  # Debug log
+                    errors.append(error_msg)
+                    continue
+
+            message = f'Successfully imported {success_count} products.'
+            if error_count > 0:
+                message += f' {error_count} items were skipped.'
+            
+            return JsonResponse({
+                'success': True,
+                'message': message
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'Error processing file: {str(e)}'
+            })
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Invalid request method'
+    }, status=405)
+
+@login_required
+def download_template(request):
+    # Create a sample DataFrame with standard column names
+    data = {
+        'Product Name': ['Laptop Dell XPS 13', 'HP Printer Ink Cartridge'],
+        'SKU': ['LAP-001', 'INK-001'],
+        'Category': ['Electronics', 'Supplies'],
+        'Description': ['13-inch laptop with Intel i7', 'Black ink cartridge'],
+        'Quantity': [25, 100],
+        'Reorder Threshold': [5, 20],
+        'Price': [1299.99, 29.99],
+        'Supplier': ['Dell Inc.', 'HP Inc.'],
+        'Status': ['In Stock', 'In Stock']
+    }
+    df = pd.DataFrame(data)
+    
+    # Create the Excel file in memory
+    excel_file = io.BytesIO()
+    df.to_excel(excel_file, index=False, engine='openpyxl')
+    excel_file.seek(0)
+    
+    # Create the HTTP response
+    response = HttpResponse(excel_file.read(),
+                          content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=inventory_template.xlsx'
+    
+    return response
+
+@login_required
+@csrf_exempt
+def get_inventory_items(request):
+    """API endpoint to get all inventory items"""
+    items = InventoryItem.objects.all().order_by('name')
+    data = [{
+        'id': item.id,
+        'name': item.name,
+        'quantity': item.quantity,
+        'threshold': item.threshold,
+        'status': item.status,
+        'status_text': item.get_status_display()
+    } for item in items]
+    return JsonResponse(data, safe=False)
+
+@login_required
+@csrf_exempt
+def add_inventory_item(request):
+    """API endpoint to add a new inventory item"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            item = InventoryItem.objects.create(
+                name=data['name'],
+                quantity=data['quantity'],
+                threshold=data['threshold']
+            )
+            return JsonResponse({
+                'success': True,
+                'id': item.id,
+                'status': item.status,
+                'status_text': item.get_status_display()
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+@login_required
+@csrf_exempt
+def update_inventory_item(request, item_id):
+    """API endpoint to update an inventory item"""
+    if request.method == 'PUT':
+        try:
+            item = InventoryItem.objects.get(id=item_id)
+            data = json.loads(request.body)
+            item.name = data.get('name', item.name)
+            item.quantity = data.get('quantity', item.quantity)
+            item.threshold = data.get('threshold', item.threshold)
+            item.save()
+            return JsonResponse({
+                'success': True,
+                'status': item.status,
+                'status_text': item.get_status_display()
+            })
+        except InventoryItem.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Item not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+@login_required
+@csrf_exempt
+def delete_inventory_item(request, item_id):
+    """API endpoint to delete an inventory item"""
+    if request.method == 'DELETE':
+        try:
+            item = InventoryItem.objects.get(id=item_id)
+            item.delete()
+            return JsonResponse({'success': True})
+        except InventoryItem.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Item not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)

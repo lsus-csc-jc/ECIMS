@@ -33,6 +33,9 @@
             </div>
             <button type="submit" class="btn btn-primary w-100 mb-3">Sign in</button>
           </form>
+          <div class="text-center mb-3">
+            <a href="{% url 'password_reset' %}" class="text-primary">Forgot Password?</a>
+          </div>
           <div class="text-center mt-3">
             <span>Don't have an account?</span>
             <a href="{% url 'signup' %}" class="text-primary">Sign up</a>

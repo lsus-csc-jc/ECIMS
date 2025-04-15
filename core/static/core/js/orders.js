@@ -233,6 +233,86 @@ function resetOrderModal() {
     updateSupplierDropdown(); // Refresh supplier list in case it changed
 }
 
+// Function to update the state of bulk action buttons based on selected orders
+function updateBulkActionButtons() {
+    const selectedCount = document.querySelectorAll('.order-checkbox:checked').length;
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const bulkUpdateStatusBtn = document.getElementById('bulkUpdateStatusBtn');
+    const bulkStatusSelect = document.getElementById('bulkStatusUpdateSelect');
+
+    // Enable/disable buttons based on selection
+    if (bulkDeleteBtn) {
+        bulkDeleteBtn.disabled = selectedCount === 0;
+    }
+    if (bulkUpdateStatusBtn) {
+        bulkUpdateStatusBtn.disabled = selectedCount === 0;
+    }
+    if (bulkStatusSelect) {
+        bulkStatusSelect.disabled = selectedCount === 0;
+    }
+}
+
+// Function to attach checkbox listeners
+function attachCheckboxListeners() {
+    const selectAllCheckbox = document.getElementById('selectAllOrders');
+    const orderCheckboxes = document.querySelectorAll('.order-checkbox');
+    
+    // Remove existing listeners
+    if (selectAllCheckbox) {
+        selectAllCheckbox.removeEventListener('change', handleSelectAll);
+    }
+    orderCheckboxes.forEach(checkbox => {
+        checkbox.removeEventListener('change', handleCheckboxChange);
+    });
+
+    // Add new listeners
+    if (selectAllCheckbox && orderCheckboxes.length > 0) {
+        selectAllCheckbox.addEventListener('change', handleSelectAll);
+        orderCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', handleCheckboxChange);
+        });
+    }
+
+    // Update button states
+    updateBulkActionButtons();
+}
+
+// Select All handler
+function handleSelectAll(event) {
+    const orderCheckboxes = document.querySelectorAll('.order-checkbox');
+    orderCheckboxes.forEach(checkbox => {
+        checkbox.checked = event.target.checked;
+    });
+    updateBulkActionButtons();
+}
+
+// Individual checkbox handler
+function handleCheckboxChange(event) {
+    const selectAllCheckbox = document.getElementById('selectAllOrders');
+    if (!event.target.checked) {
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = false;
+        }
+    } else {
+        // Check if all checkboxes are now checked
+        const allChecked = document.querySelectorAll('.order-checkbox').length === 
+                         document.querySelectorAll('.order-checkbox:checked').length;
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = allChecked;
+        }
+    }
+    updateBulkActionButtons();
+}
+
+// Get Selected Order IDs Function
+function getSelectedOrderIds() {
+    const selectedIds = [];
+    document.querySelectorAll('.order-checkbox:checked').forEach(checkbox => {
+        selectedIds.push(checkbox.value);
+    });
+    return selectedIds;
+}
+
 document.addEventListener("DOMContentLoaded", function() {
     console.log("DOM fully loaded and parsed.");
     
@@ -439,7 +519,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Bulk Delete Button
     if (bulkDeleteBtn) {
         console.log("Attaching listener to Bulk Delete button.");
-        bulkDeleteBtn.addEventListener('click', function() {
+        bulkDeleteBtn.addEventListener('click', async function() {
             const selectedIds = getSelectedOrderIds();
             if (selectedIds.length === 0) {
                 alert('Please select at least one order to delete.');
@@ -447,29 +527,29 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             
             if (confirm(`Are you sure you want to delete ${selectedIds.length} selected order(s)?`)) {
-                console.log("Performing bulk delete for IDs:", selectedIds);
-                fetch('/orders/bulk_delete/', { // Use the correct URL defined in urls.py
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCookie('csrftoken')
-                    },
-                    body: JSON.stringify({ order_ids: selectedIds })
-                })
-                .then(response => response.json())
-                .then(data => {
+                try {
+                    const response = await fetch('/orders/bulk_delete/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ order_ids: selectedIds })
+                    });
+                    
+                    const data = await response.json();
                     console.log("Bulk Delete Response:", data);
+                    
                     if (data.success) {
                         alert(data.message || 'Orders deleted successfully.');
-                        window.location.reload(); // Refresh page
+                        window.location.reload();
                     } else {
                         alert('Error deleting orders: ' + data.error);
                     }
-                })
-                .catch(error => {
+                } catch (error) {
                     console.error("Bulk Delete Fetch Error:", error);
                     alert('An error occurred during bulk deletion.');
-                });
+                }
             }
         });
     } else {
@@ -479,51 +559,55 @@ document.addEventListener("DOMContentLoaded", function() {
     // Bulk Update Status Button
     if (bulkUpdateStatusBtn && bulkStatusSelect) {
         console.log("Attaching listener to Bulk Update Status button.");
-        bulkUpdateStatusBtn.addEventListener('click', function() {
+        bulkUpdateStatusBtn.addEventListener('click', async function() {
             const selectedIds = getSelectedOrderIds();
             const newStatus = bulkStatusSelect.value;
-
+            
             if (selectedIds.length === 0) {
                 alert('Please select at least one order to update.');
                 return;
             }
+            
             if (!newStatus) {
-                alert('Please select a target status.');
+                alert('Please select a new status.');
                 return;
             }
-
-            if (confirm(`Are you sure you want to change the status of ${selectedIds.length} selected order(s) to ${newStatus}?`)) {
-                 console.log(`Performing bulk status update to ${newStatus} for IDs:`, selectedIds);
-                 fetch('/orders/bulk_update_status/', { // Use the correct URL
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCookie('csrftoken')
-                    },
-                    body: JSON.stringify({ order_ids: selectedIds, status: newStatus })
-                })
-                .then(response => response.json())
-                .then(data => {
+            
+            if (confirm(`Are you sure you want to update ${selectedIds.length} selected order(s) to ${newStatus}?`)) {
+                try {
+                    const response = await fetch('/orders/bulk_update_status/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ 
+                            order_ids: selectedIds,
+                            status: newStatus
+                        })
+                    });
+                    
+                    const data = await response.json();
                     console.log("Bulk Update Status Response:", data);
-                     if (data.success) {
+                    
+                    if (data.success) {
                         alert(data.message || 'Orders updated successfully.');
-                        window.location.reload(); // Refresh page
+                        window.location.reload();
                     } else {
                         alert('Error updating orders: ' + data.error);
                     }
-                })
-                .catch(error => {
+                } catch (error) {
                     console.error("Bulk Update Status Fetch Error:", error);
                     alert('An error occurred during bulk status update.');
-                });
+                }
             }
         });
     } else {
         console.warn("Bulk Status Update button not found.");
     }
 
-    // Initial setup of button states
-    updateBulkActionButtons();
+    // Initial setup
+    attachCheckboxListeners();
 
     // --- END: Bulk Actions Logic ---
     
