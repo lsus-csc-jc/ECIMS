@@ -272,9 +272,10 @@
               </div>
             </div>
            
-            <!-- Recent Orders List -->
+            <!-- Right Column with Orders and Suppliers -->
             <div class="col-md-6">
-              <div class="card border-primary shadow-sm">
+              <!-- Recent Orders List -->
+              <div class="card border-primary shadow-sm mb-3">
                 <div class="card-header fw-bold">Recent Orders</div>
                 <div class="card-body">
                   {% if recent_orders %}
@@ -288,6 +289,25 @@
                   </ul>
                   {% else %}
                   <p class="text-muted">No recent orders.</p>
+                  {% endif %}
+                </div>
+              </div>
+              
+              <!-- Suppliers List -->
+              <div class="card border-primary shadow-sm">
+                <div class="card-header fw-bold">Suppliers</div>
+                <div class="card-body">
+                  {% if top_suppliers %}
+                  <ul class="list-group list-group-flush">
+                    {% for supplier in top_suppliers %}
+                      <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{{ supplier.name }}</span>
+                        <span class="badge bg-primary rounded-pill">{{ supplier.order_count }} orders</span>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                  {% else %}
+                  <p class="text-muted">No supplier order data available.</p>
                   {% endif %}
                 </div>
               </div>

@@ -475,6 +475,9 @@ def dashboard_view(request):
     # Fetch recent orders (e.g., last 5)
     recent_orders = Order.objects.order_by('-date_ordered')[:5]
     
+    # Fetch recent suppliers (last 5)
+    recent_suppliers = Supplier.objects.order_by('-date_added')[:5]
+    
     # Fetch low/out-of-stock items
     low_stock_items = InventoryItem.objects.filter(Q(status=1) | Q(status=2)).order_by('status', 'name')
     
@@ -487,6 +490,17 @@ def dashboard_view(request):
     for item in inventory_status_counts:
         chart_labels.append(status_map.get(item['status'], 'Unknown'))
         chart_data.append(item['count'])
+        
+    # Prepare data for Suppliers Status chart
+    active_suppliers = Supplier.objects.filter(status=True).count()
+    inactive_suppliers = Supplier.objects.filter(status=False).count()
+    suppliers_chart_labels = ["Active", "Inactive"]
+    suppliers_chart_data = [active_suppliers, inactive_suppliers]
+    
+    # Get top suppliers by order count
+    top_suppliers = Supplier.objects.annotate(
+        order_count=Count('orders')
+    ).order_by('-order_count')[:5]
 
     context = {
         'total_products': total_products,
@@ -494,9 +508,13 @@ def dashboard_view(request):
         'pending_orders': pending_orders,
         'total_suppliers': total_suppliers, # Added to context
         'recent_orders': recent_orders,
+        'recent_suppliers': recent_suppliers, # Added recent suppliers
+        'top_suppliers': top_suppliers, # Added top suppliers
         'low_stock_items': low_stock_items,
         'inventory_chart_labels': json.dumps(chart_labels), # Pass as JSON for JS
         'inventory_chart_data': json.dumps(chart_data),   # Pass as JSON for JS
+        'suppliers_chart_labels': json.dumps(suppliers_chart_labels), # Pass as JSON for JS
+        'suppliers_chart_data': json.dumps(suppliers_chart_data),   # Pass as JSON for JS
     }
     return render(request, 'dashboard.html', context)
 
