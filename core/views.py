@@ -11,7 +11,7 @@ from core.models import Profile
 import json
 import uuid
 from .decorators import allowed_roles
-from .roles import ROLE_SETTINGS_ACCESS, ROLE_INVENTORY_ACCESS, ROLE_ORDERS_ACCESS
+from .roles import ROLE_SETTINGS_ACCESS, ROLE_INVENTORY_ACCESS, ROLE_ORDERS_ACCESS, ROLE_SUPPLIERS_ACCESS, ROLE_REPORTS_ACCESS
 from .forms import SignUpForm  # Import the fixed signup form
 from .models import Order, Supplier, Profile, InventoryItem, OrderItem
 import logging
@@ -54,6 +54,8 @@ def signup_page(request):
     return render(request, 'signup.html', {'form': form})
 
 
+@login_required
+@allowed_roles(roles=ROLE_ORDERS_ACCESS)
 def save_order(request):
     if request.method == 'POST':
         try:
@@ -138,12 +140,16 @@ def save_order(request):
 
     return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
 
+@login_required
+@allowed_roles(roles=ROLE_ORDERS_ACCESS)
 def get_suppliers(request):
     suppliers = Supplier.objects.all().values('id', 'name')
     return JsonResponse({'suppliers': list(suppliers)})
 
 
 @csrf_exempt
+@login_required
+@allowed_roles(roles=ROLE_ORDERS_ACCESS)
 def update_order(request, order_id):
     if request.method == 'POST':
         try:
@@ -199,6 +205,8 @@ def update_order(request, order_id):
 
 @csrf_exempt
 @require_POST
+@login_required
+@allowed_roles(roles=ROLE_SETTINGS_ACCESS)
 def add_user(request):
     name = request.POST.get("name")
     email = request.POST.get("email")
@@ -212,6 +220,12 @@ def add_user(request):
         user = User.objects.create_user(username=name, email=email, password=password)
         user.profile.role = role
         user.profile.save()
+        
+        # If creating an Admin user, give superuser privileges
+        if role == 'Admin':
+            user.is_superuser = True
+            user.is_staff = True
+            user.save()
         
         response_data = {
             "success": True,
@@ -228,13 +242,9 @@ def add_user(request):
 
 
 
-@login_required # Ensure user is logged in
+@login_required
+@allowed_roles(roles=ROLE_SETTINGS_ACCESS)
 def reset_password(request):
-    # --- Permission Check --- 
-    if not request.user.is_superuser:
-        messages.error(request, "You do not have permission to reset passwords.")
-        return redirect('settings')
-
     if request.method == "POST":
         new_password = request.POST.get('new_password', '').strip()
         confirm_password = request.POST.get('confirm_password', '').strip()
@@ -284,14 +294,17 @@ def reset_password(request):
     # If not POST (e.g., GET request), just redirect back
     return redirect('settings')
 
+@login_required
+@allowed_roles(roles=ROLE_SETTINGS_ACCESS)
 def delete_user(request, user_id):
     if request.method == 'POST':
-        # Optional: check if the request.user is allowed to delete
         user_to_delete = get_object_or_404(User, pk=user_id)
         user_to_delete.delete()
         messages.success(request, 'User deleted successfully.')
     return redirect('settings')  # or wherever you want to go after deletion
 
+@login_required
+@allowed_roles(roles=ROLE_SETTINGS_ACCESS)
 def edit_user(request, user_id):
     user_to_edit = get_object_or_404(User, pk=user_id)
 
@@ -305,6 +318,17 @@ def edit_user(request, user_id):
         user_to_edit.email = new_email
         user_to_edit.profile.role = new_role
         user_to_edit.profile.save()
+        
+        # If role is changed to Admin, give superuser privileges
+        if new_role == 'Admin':
+            user_to_edit.is_superuser = True
+            user_to_edit.is_staff = True
+        else:
+            # Only change superuser status if explicitly downgrading from Admin
+            if new_role != 'Admin' and user_to_edit.is_superuser:
+                user_to_edit.is_superuser = False
+                user_to_edit.is_staff = False
+        
         user_to_edit.save()
         
         messages.success(request, 'User updated successfully.')
@@ -317,6 +341,8 @@ def edit_user(request, user_id):
 
 
 @csrf_exempt
+@login_required
+@allowed_roles(roles=ROLE_SETTINGS_ACCESS)
 def update_user(request, user_id):
     if request.method == 'POST':
         try:
@@ -324,12 +350,24 @@ def update_user(request, user_id):
             user = User.objects.get(id=user_id)
             user.username = data.get('username', user.username)
             user.email = data.get('email', user.email)
-            user.save()
-
+            
             # Update role in profile
             profile = user.profile
-            profile.role = data.get('role', profile.role)
+            new_role = data.get('role', profile.role)
+            profile.role = new_role
             profile.save()
+            
+            # If role is changed to Admin, give superuser privileges
+            if new_role == 'Admin':
+                user.is_superuser = True
+                user.is_staff = True
+            else:
+                # Only change superuser status if explicitly downgrading from Admin
+                if profile.role != 'Admin' and user.is_superuser:
+                    user.is_superuser = False
+                    user.is_staff = False
+            
+            user.save()
 
             return JsonResponse({'success': True})
         except Exception as e:
@@ -342,7 +380,7 @@ def view_inventory(request):
     return render(request, 'inventory.html')
 
 
-@allowed_roles(roles=['Employee'])
+@allowed_roles(roles=ROLE_INVENTORY_ACCESS)
 @csrf_exempt
 @login_required
 def add_inventory_item(request):
@@ -392,7 +430,7 @@ def add_inventory_item(request):
     return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
 
 
-@allowed_roles(roles=['Manager'])
+@allowed_roles(roles=ROLE_INVENTORY_ACCESS)
 def delete_inventory_item(request, item_id):
     # Logic to delete an inventory item (implement deletion logic here)
     pass
@@ -400,12 +438,9 @@ def delete_inventory_item(request, item_id):
 @allowed_roles(roles=ROLE_SETTINGS_ACCESS)
 @login_required
 def settings_view(request):
-    if not request.user.is_superuser:
-        return HttpResponseForbidden("Access Denied")
-
     users = User.objects.all().select_related("profile")
 
-    # Ensure profile exists for superuser
+    # Ensure profile exists for user
     profile, created = Profile.objects.get_or_create(user=request.user)
 
     if request.method == 'POST':
@@ -468,15 +503,18 @@ def invmanagement_view(request):
     return render(request, 'invmanagement.html')
 
 @login_required
+@allowed_roles(roles=ROLE_ORDERS_ACCESS)
 def orders_view(request):
     orders = Order.objects.all().order_by('-date_ordered')
     return render(request, 'orders.html', {'orders': orders})
 
 @login_required
+@allowed_roles(roles=ROLE_SUPPLIERS_ACCESS)
 def suppliers_view(request):
     return render(request, 'suppliers.html')
 
 @login_required
+@allowed_roles(roles=ROLE_REPORTS_ACCESS)
 def reports_view(request):
     return render(request, 'reports.html')
 
@@ -492,13 +530,9 @@ def profile_list(request):
     return render(request, 'profile_list.html', {'profiles': profiles})
 
 @login_required
+@allowed_roles(roles=ROLE_ORDERS_ACCESS)
 @require_POST # Ensure this view only accepts POST requests
 def delete_order(request, order_id):
-    # Optional: Add permission check here (e.g., only superusers/managers)
-    # if not request.user.is_superuser:
-    #     messages.error(request, "You don't have permission to delete orders.")
-    #     return redirect('orders')
-
     order_to_delete = get_object_or_404(Order, pk=order_id)
     order_number = order_to_delete.order_number # Get number for message before deleting
     try:
@@ -512,12 +546,9 @@ def delete_order(request, order_id):
     return redirect('orders')
 
 @login_required
+@allowed_roles(roles=ROLE_ORDERS_ACCESS)
 @require_POST
 def bulk_delete_orders(request):
-    # Optional: Permission check
-    # if not request.user.is_superuser:
-    #     return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
-    
     try:
         data = json.loads(request.body)
         order_ids = data.get('order_ids')
@@ -545,10 +576,9 @@ def bulk_delete_orders(request):
         return JsonResponse({'success': False, 'error': f'An unexpected error occurred: {str(e)}'}, status=500)
 
 @login_required
+@allowed_roles(roles=ROLE_ORDERS_ACCESS)
 @require_POST
 def bulk_update_order_status(request):
-    # Optional: Permission check
-        
     try:
         data = json.loads(request.body)
         order_ids = data.get('order_ids')
@@ -629,13 +659,9 @@ def bulk_update_order_status(request):
         return JsonResponse({'success': False, 'error': f'An unexpected error occurred: {str(e)}'}, status=500)
 
 @login_required
+@allowed_roles(roles=ROLE_INVENTORY_ACCESS)
 @require_POST
 def bulk_delete_inventory_items(request):
-    # Optional: Permission check (e.g., require manager role)
-    # profile = getattr(request.user, 'profile', None)
-    # if not profile or profile.role not in ['Manager', 'Admin']:
-    #     return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
-    
     try:
         data = json.loads(request.body)
         item_ids = data.get('item_ids')
@@ -663,6 +689,8 @@ def bulk_delete_inventory_items(request):
         return JsonResponse({'success': False, 'error': f'An unexpected error occurred: {str(e)}'}, status=500)
 
 @csrf_exempt
+@login_required
+@allowed_roles(roles=ROLE_INVENTORY_ACCESS)
 def import_products(request):
     if request.method == 'POST':
         try:
@@ -811,6 +839,7 @@ def import_products(request):
     }, status=405)
 
 @login_required
+@allowed_roles(roles=ROLE_INVENTORY_ACCESS)
 def download_template(request):
     # Create a sample DataFrame with standard column names
     data = {
@@ -833,6 +862,7 @@ def download_template(request):
     return response
 
 @login_required
+@allowed_roles(roles=ROLE_INVENTORY_ACCESS)
 @csrf_exempt
 def get_inventory_items(request):
     """API endpoint to get all inventory items"""
@@ -848,6 +878,7 @@ def get_inventory_items(request):
     return JsonResponse(data, safe=False)
 
 @login_required
+@allowed_roles(roles=ROLE_INVENTORY_ACCESS)
 @csrf_exempt
 def update_inventory_item(request, item_id):
     """API endpoint to update an inventory item"""
@@ -871,6 +902,7 @@ def update_inventory_item(request, item_id):
     return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
 
 @login_required
+@allowed_roles(roles=ROLE_INVENTORY_ACCESS)
 @csrf_exempt
 def delete_inventory_item(request, item_id):
     """API endpoint to delete an inventory item"""

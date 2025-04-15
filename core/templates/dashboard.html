@@ -137,6 +137,7 @@
                     Inventory Management
                   </a>
                 </li>
+                {% if user.is_superuser or user.profile.role == 'Admin' or user.profile.role == 'Owner' or user.profile.role == 'Manager' %}
                 <li class="nav-item">
                   <a class="nav-link d-flex align-items-center gap-2" href="#" data-page="orders.html">
                     <svg class="bi"><use xlink:href="#cart"/></svg>
@@ -161,12 +162,13 @@
                     Change Log
                   </a>
                 </li>
+                {% endif %}
               </ul>
 
               <hr class="my-3">
 
               <ul class="nav flex-column mb-auto">
-                {% if user.is_superuser %}
+                {% if user.is_superuser or user.profile.role == 'Admin' or user.profile.role == 'Owner' %}
                   <li class="nav-item">
                     <a class="nav-link d-flex align-items-center gap-2" href="#" data-page="settings.html">
                       <svg class="bi"><use xlink:href="#gear-wide-connected"/></svg>
@@ -220,24 +222,40 @@
                 </a>
               </div>
               <div class="col-md-3">
+                {% if user.is_superuser or user.profile.role == 'Admin' or user.profile.role == 'Owner' or user.profile.role == 'Manager' %}
                 <a href="{% url 'orders' %}" class="text-decoration-none text-dark">
+                {% else %}
+                <div class="text-decoration-none text-dark">
+                {% endif %}
                 <div class="card border-danger shadow-sm h-100">
                   <div class="card-body d-flex flex-column justify-content-center">
                     <h5 class="card-title">Pending Orders</h5>
                     <p class="display-4" id="pending-orders">{{ pending_orders }}</p>
                   </div>
                 </div>
+                {% if user.is_superuser or user.profile.role == 'Admin' or user.profile.role == 'Owner' or user.profile.role == 'Manager' %}
                 </a>
+                {% else %}
+                </div>
+                {% endif %}
               </div>
               <div class="col-md-3">
+                {% if user.is_superuser or user.profile.role == 'Admin' or user.profile.role == 'Owner' or user.profile.role == 'Manager' %}
                 <a href="{% url 'suppliers' %}" class="text-decoration-none text-dark">
+                {% else %}
+                <div class="text-decoration-none text-dark">
+                {% endif %}
                 <div class="card border-info shadow-sm h-100">
                   <div class="card-body d-flex flex-column justify-content-center">
                     <h5 class="card-title">Total Suppliers</h5>
                     <p class="display-4" id="total-suppliers">{{ total_suppliers }}</p>
                   </div>
                 </div>
+                {% if user.is_superuser or user.profile.role == 'Admin' or user.profile.role == 'Owner' or user.profile.role == 'Manager' %}
                 </a>
+                {% else %}
+                </div>
+                {% endif %}
               </div>
             </div>
           </div>
