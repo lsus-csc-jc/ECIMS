@@ -19,6 +19,8 @@ from django.db import transaction, IntegrityError
 from django.db.models import Count, Q # Import Q for complex lookups
 import pandas as pd
 import io
+import codecs
+import csv
 
 # Get an instance of a logger
 # logger = logging.getLogger(__name__) # Removing logger for simplification
@@ -694,12 +696,20 @@ def bulk_delete_inventory_items(request):
 def import_products(request):
     if request.method == 'POST':
         try:
+            # Print debug info about the request
+            print("Import products request received")
+            print(f"FILES: {request.FILES}")
+            print(f"POST: {request.POST}")
+            
             excel_file = request.FILES.get('excel_file')
             if not excel_file:
+                print("No file found in request")
                 return JsonResponse({
                     'success': False,
                     'error': 'Please select a file to upload'
                 })
+                
+            print(f"File received: {excel_file.name}, size: {excel_file.size} bytes")
                 
             if not excel_file.name.endswith('.csv'):
                 return JsonResponse({
@@ -709,16 +719,34 @@ def import_products(request):
 
             # Read the CSV file
             try:
-                df = pd.read_csv(excel_file)
-                print(f"DataFrame head:\n{df.head()}")  # Debug print
-                print(f"DataFrame columns: {df.columns.tolist()}")  # Debug print
+                # First try with pandas
+                try:
+                    df = pd.read_csv(excel_file)
+                    print(f"DataFrame created successfully with {len(df)} rows")
+                    print(f"DataFrame head:\n{df.head()}")
+                    print(f"DataFrame columns: {df.columns.tolist()}")
+                except Exception as e:
+                    print(f"Error with pandas: {str(e)}")
+                    # If pandas fails, try with builtin csv module
+                    excel_file.seek(0)  # Reset file pointer
+                    import csv
+                    reader = csv.DictReader(codecs.iterdecode(excel_file, 'utf-8'))
+                    data = list(reader)
+                    if not data:
+                        raise Exception("No data found in CSV")
+                    
+                    # Convert to DataFrame
+                    df = pd.DataFrame(data)
+                    print(f"Created DataFrame from CSV module with {len(df)} rows")
             except Exception as e:
+                print(f"Error reading CSV file: {str(e)}")
                 return JsonResponse({
                     'success': False,
                     'error': f'Error reading CSV file: {str(e)}. Please make sure the file is not corrupted and is a valid CSV file.'
                 })
 
             if df.empty:
+                print("DataFrame is empty")
                 return JsonResponse({
                     'success': False,
                     'error': 'The CSV file is empty. Please add some data.'
@@ -757,6 +785,8 @@ def import_products(request):
             if not threshold_col and len(df.columns) >= 3:
                 threshold_col = df.columns[2]  # Third column could be threshold
 
+            print(f"Mapped columns: Name={name_col}, Quantity={quantity_col}, Threshold={threshold_col}")
+            
             # Process each row
             success_count = 0
             error_count = 0
@@ -768,14 +798,20 @@ def import_products(request):
             for index, row in df.iterrows():
                 try:
                     # Get and validate name
-                    name = str(row[name_col]).strip() if name_col else None
-                    if not name or pd.isna(name) or name.lower() == name_col.lower():
+                    if name_col is None:
+                        print(f"Row {index + 1}: Missing name column")
+                        error_count += 1
+                        continue
+                        
+                    name = str(row[name_col]).strip() if not pd.isna(row[name_col]) else None
+                    if not name or pd.isna(name) or (index == 0 and name.lower() == name_col.lower()):
+                        print(f"Row {index + 1}: Skipping header or empty name: {name}")
                         continue
 
                     # Get and validate quantity and threshold
                     try:
                         # Handle quantity
-                        quantity = row[quantity_col] if quantity_col else 0
+                        quantity = row[quantity_col] if quantity_col and not pd.isna(row[quantity_col]) else 0
                         if pd.isna(quantity):
                             quantity = 0
                         if isinstance(quantity, str):
@@ -785,7 +821,7 @@ def import_products(request):
                             quantity = 0
 
                         # Handle threshold
-                        threshold = row[threshold_col] if threshold_col else 0
+                        threshold = row[threshold_col] if threshold_col and not pd.isna(row[threshold_col]) else 0
                         if pd.isna(threshold):
                             threshold = 0
                         if isinstance(threshold, str):
@@ -795,6 +831,7 @@ def import_products(request):
                             threshold = 0
                             
                     except (ValueError, TypeError) as e:
+                        print(f"Row {index + 1}: Error with quantity/threshold: {str(e)}")
                         # If there's an error with quantity or threshold, set them to 0
                         quantity = 0
                         threshold = 0
@@ -802,15 +839,24 @@ def import_products(request):
                     print(f"Processing row {index + 1}: Name='{name}', Quantity={quantity}, Threshold={threshold}")  # Debug log
 
                     # Create or update inventory item
-                    item, created = InventoryItem.objects.update_or_create(
-                        name=name,
-                        defaults={
-                            'quantity': quantity,
-                            'threshold': threshold
-                        }
-                    )
-                    success_count += 1
-                    
+                    try:
+                        print(f"Attempting to save item to database: {name}, qty={quantity}, threshold={threshold}")
+                        item, created = InventoryItem.objects.update_or_create(
+                            name=name,
+                            defaults={
+                                'quantity': quantity,
+                                'threshold': threshold
+                            }
+                        )
+                        print(f"Database operation completed. Item ID: {item.id}, Created: {created}")
+                        success_count += 1
+                        print(f"Row {index + 1}: {'Created' if created else 'Updated'} item {name}")
+                    except Exception as db_error:
+                        print(f"DATABASE ERROR saving item {name}: {str(db_error)}")
+                        error_count += 1
+                        errors.append(f"Database error with {name}: {str(db_error)}")
+                        continue
+
                 except Exception as e:
                     error_count += 1
                     error_msg = f"Row {index + 1}: {str(e)}"
@@ -822,12 +868,14 @@ def import_products(request):
             if error_count > 0:
                 message += f' {error_count} items were skipped.'
             
+            print(f"Import completed: {success_count} successes, {error_count} errors")
             return JsonResponse({
                 'success': True,
                 'message': message
             })
             
         except Exception as e:
+            print(f"General error during import: {str(e)}")
             return JsonResponse({
                 'success': False,
                 'error': f'Error processing file: {str(e)}'

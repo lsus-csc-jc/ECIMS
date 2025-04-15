@@ -13,6 +13,11 @@ $(document).ready(function () {
     const addProductItems = $('#addProductItems');
     const addAnotherItemBtn = $('#addAnotherItem');
 
+    // --- Import Products Modal Elements ---
+    const importForm = $('#importForm');
+    const importSuccess = $('#importSuccess');
+    const importError = $('#importError');
+
     // Function to add a new product item row
     function addProductItemRow() {
         // Create a new product item row
@@ -501,5 +506,80 @@ $(document).ready(function () {
     setInterval(() => fetchInventoryData(false), 15000);
 
     // --- Tour Logic Removed ---
+
+    // Handle import form submission
+    if (importForm.length) {
+        importForm.on('submit', function(e) {
+            e.preventDefault();
+            
+            const fileInput = $('#excel_file')[0];
+            if (!fileInput.files || fileInput.files.length === 0) {
+                importError.removeClass('d-none').text('Please select a CSV file to import');
+                importSuccess.addClass('d-none');
+                return;
+            }
+            
+            // Make sure it's a CSV file
+            const file = fileInput.files[0];
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                importError.removeClass('d-none').text('Please select a valid CSV file (.csv)');
+                importSuccess.addClass('d-none');
+                return;
+            }
+            
+            // Prepare form data
+            const formData = new FormData(importForm[0]);
+            
+            // Show loading state
+            $('#uploadBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Importing...');
+            importError.addClass('d-none');
+            importSuccess.addClass('d-none');
+            
+            // Send AJAX request
+            $.ajax({
+                url: '/import-products/',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#uploadBtn').prop('disabled', false).text('Upload and Import');
+                    
+                    if (response.success) {
+                        importSuccess.removeClass('d-none').text(response.message);
+                        importError.addClass('d-none');
+                        importForm[0].reset();
+                        
+                        // Refresh inventory data
+                        fetchInventoryData(false);
+                        
+                        // Close modal after 2 seconds
+                        setTimeout(function() {
+                            $('#importModal').modal('hide');
+                        }, 2000);
+                    } else {
+                        importError.removeClass('d-none').text(response.error || 'Unknown error occurred');
+                        importSuccess.addClass('d-none');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#uploadBtn').prop('disabled', false).text('Upload and Import');
+                    
+                    let errorMessage = 'An error occurred during the import';
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.error) {
+                            errorMessage = response.error;
+                        }
+                    } catch (e) {
+                        console.error('Error parsing error response:', e);
+                    }
+                    
+                    importError.removeClass('d-none').text(errorMessage);
+                    importSuccess.addClass('d-none');
+                }
+            });
+        });
+    }
 
 }); // End of $(document).ready
