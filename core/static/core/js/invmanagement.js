@@ -1,22 +1,14 @@
 $(document).ready(function () {
     console.log("✅ JavaScript Loaded and Running in invmanagement.js!");
 
+    // Constants and Variables
     const apiUrl = "/api/v1/items/";
     const tableBody = $("#tableBody");
     const productStatusMap = new Map();
     let modalActive = false;
     let lowStockQueue = [];
 
-    function getViewedLowStockIds() {
-        return new Set(JSON.parse(localStorage.getItem("viewedLowStockIds") || "[]"));
-    }
-
-    function markAsViewed(productId) {
-        const viewed = getViewedLowStockIds();
-        viewed.add(productId.toString());
-        localStorage.setItem("viewedLowStockIds", JSON.stringify(Array.from(viewed)));
-    }
-
+    // Fetch Inventory Data
     async function fetchInventoryData(showAlert = false) {
         console.log("🔄 Fetching inventory data...");
 
@@ -29,12 +21,14 @@ $(document).ready(function () {
 
             const oldStatuses = new Map(productStatusMap);
             updateTable(data);
+
             if (showAlert) checkAndQueueLowStock(data, oldStatuses);
         } catch (error) {
             console.error("❌ Error fetching inventory data:", error);
         }
     }
 
+    // Update the Table with Fetched Data
     function updateTable(data) {
         console.log("🔄 Updating table with fetched data...");
         tableBody.empty();
@@ -80,33 +74,40 @@ $(document).ready(function () {
         console.log("✅ Table Updated Successfully!");
     }
 
+    // Check and Queue Low Stock Items
     function checkAndQueueLowStock(data, oldStatuses) {
-        const viewed = getViewedLowStockIds();
+        console.log("🔍 Checking for low-stock items...");
 
         data.forEach(product => {
             const prevStatus = oldStatuses.get(product.id);
             const isNowLowStock = product.status === 2 || product.status === 1;
-            const wasLowStock = prevStatus === 2 || prevStatus === 1;
+            const alertAlreadyTriggered = product.alert_triggered === true;
 
-            const statusChanged = prevStatus !== product.status;
+            console.log(`➡️ ${product.name} | Status: ${product.status} | Triggered: ${product.alert_triggered}`);
+
+            // Skip products that are already triggered or not in low stock
+            if (!isNowLowStock || alertAlreadyTriggered) return;
+
             const wentFromHighToLow = (prevStatus === 3 || prevStatus === undefined) && isNowLowStock;
 
-            if (statusChanged && isNowLowStock && viewed.has(product.id.toString())) {
-                viewed.delete(product.id.toString());
-                localStorage.setItem("viewedLowStockIds", JSON.stringify(Array.from(viewed)));
-            }
-
-            if (isNowLowStock && !viewed.has(product.id.toString()) && (statusChanged || wentFromHighToLow) && !lowStockQueue.some(p => p.id === product.id)) {
+            if (!lowStockQueue.some(p => p.id === product.id) && (prevStatus !== product.status || wentFromHighToLow)) {
                 lowStockQueue.push(product);
+                console.log("🚨 Queued Low Stock:", product.name);
             }
 
             productStatusMap.set(product.id, product.status);
         });
 
-        if (!modalActive) showNextAlert();
+        console.log("📋 Queue:", lowStockQueue.map(p => p.name));
+        if (!modalActive && lowStockQueue.length > 0) {
+            showNextAlert();
+        }
     }
 
+    // Show Next Low Stock Alert
     function showNextAlert() {
+        console.log("📣 Running showNextAlert() — Queue length:", lowStockQueue.length);
+
         if (lowStockQueue.length === 0) {
             modalActive = false;
             return;
@@ -122,10 +123,14 @@ $(document).ready(function () {
             <small>Status: ${product.status === 1 ? "Out of Stock" : "Low Stock"}</small>
         `;
         $("#notificationContent").html(content);
+
         const modal = new bootstrap.Modal(document.getElementById("notificationModal"));
         modal.show();
 
+        console.log("🟡 Modal shown for:", product.name, "| ID:", product.id);
+
         $("#markViewedBtn").off("click").on("click", function () {
+            console.log("🟢 Mark Viewed clicked for:", product.id);
             markAsViewed(product.id);
             modal.hide();
             setTimeout(() => {
@@ -135,6 +140,48 @@ $(document).ready(function () {
         });
     }
 
+    // Mark Product as Viewed
+    function markAsViewed(productId) {
+        console.log("📤 Attempting to mark product as viewed:", productId);
+
+        fetch(`/api/v1/items/${productId}/mark_alert_viewed/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCSRFToken()
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Failed to mark product ${productId}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("✅ Marked as viewed:", data);
+        })
+        .catch(error => {
+            console.error("❌ Error marking as viewed:", error);
+        });
+    }
+
+    // CSRF Token Retrieval
+    function getCSRFToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith('csrftoken=')) {
+                    cookieValue = cookie.substring('csrftoken='.length, cookie.length);
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Event Listeners
     $("#searchInput").on("keyup", function () {
         let value = $(this).val().toLowerCase();
         $("#tableBody tr").each(function () {
@@ -214,7 +261,7 @@ $(document).ready(function () {
         };
 
         try {
-            const response = await fetch(`${apiUrl}${productId}/`, {
+            const response = await fetch(`${apiUrl}${productId}/update_item`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -258,21 +305,17 @@ $(document).ready(function () {
         }
     });
 
-    function getCSRFToken() {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.startsWith('csrftoken=')) {
-                    cookieValue = cookie.substring('csrftoken='.length, cookie.length);
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-
+    // Initial Data Fetch
     fetchInventoryData(true);
     setInterval(() => fetchInventoryData(true), 15000);
+
+    // Filter by Status
+    $("#statusFilter").on("change", function () {
+        const selectedStatus = $(this).val();
+        $("#tableBody tr").each(function () {
+            const statusText = $(this).find("td:eq(3)").text().trim();
+            const showRow = selectedStatus === "" || statusText === selectedStatus;
+            $(this).toggle(showRow);
+        });
+    });
 });

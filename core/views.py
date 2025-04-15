@@ -5,14 +5,14 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
 import json
 import uuid
 
 from .forms import SignUpForm  # Import the fixed signup form
-from .models import Order, Supplier, Profile
+from .models import Order, Supplier, Profile, InventoryItem
 from .decorators import role_required
 
 User = get_user_model()
@@ -45,6 +45,7 @@ def signup_page(request):
         form = SignUpForm()
     return render(request, 'signup.html', {'form': form})
 
+@login_required
 def save_order(request):
     if request.method == 'POST':
         try:
@@ -89,6 +90,7 @@ def save_order(request):
 
 @csrf_exempt
 @require_POST
+#TODO: @role_required(['Manager'])
 def add_user(request):
     name = request.POST.get("name")
     email = request.POST.get("email")
@@ -119,6 +121,7 @@ def add_user(request):
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)})
 
+#TODO: @role_required(['Manager'])
 def reset_user_password(request, user_id):
     user = get_object_or_404(User, id=user_id)
     if request.method == 'POST':
@@ -133,7 +136,7 @@ def reset_user_password(request, user_id):
             messages.error(request, "Passwords do not match or are empty.")
     return render(request, 'reset_password.html', {'user': user})
 
-
+#TODO: @role_required(['Manager'])
 def delete_user(request, user_id):
     if request.method == 'POST':
         # Optional: check if the request.user is allowed to delete
@@ -142,6 +145,7 @@ def delete_user(request, user_id):
         messages.success(request, 'User deleted successfully.')
     return redirect('settings')  # or wherever you want to go after deletion
 
+#TODO: @role_required(['Manager'])
 def edit_user(request, user_id):
     user_to_edit = get_object_or_404(User, pk=user_id)
 
@@ -181,6 +185,63 @@ def add_inventory_item(request):
 def delete_inventory_item(request, item_id):
     # Logic to delete an inventory item (implement deletion logic here)
     pass
+
+@csrf_exempt
+@require_POST
+@login_required
+def mark_alert_viewed(request, item_id):
+    try:
+        item = InventoryItem.objects.get(id=item_id)
+        item.alert_triggered = True
+        item.save()
+        return JsonResponse({"success": True})
+    except InventoryItem.DoesNotExist:
+        return JsonResponse({"error": "Item not found"}, status=404)
+
+@csrf_exempt
+@require_http_methods(["PUT"])
+@login_required
+def update_inventory_item(request, item_id):
+    try:
+        # Retrieve the item
+        item = InventoryItem.objects.get(id=item_id)
+
+        # Parse the incoming data from the request body
+        data = json.loads(request.body)
+
+        # Update fields (only if provided in the request body)
+        item.name = data.get("name", item.name)
+        item.quantity = int(data.get("quantity", item.quantity))
+        item.threshold = int(data.get("threshold", item.threshold))
+
+        # Check if the quantity has changed and adjust alert status accordingly
+        #if item.quantity < item.threshold:
+            #if not item.alert_triggered:
+                #item.alert_triggered = True
+        #else:
+        if item.quantity >= item.threshold:
+            #if item.alert_triggered:
+            item.alert_triggered = False
+
+        # Save the changes
+        item.save()
+
+        return JsonResponse({
+            "success": True,
+            "item": {
+                "id": item.id,
+                "name": item.name,
+                "quantity": item.quantity,
+                "threshold": item.threshold,
+                "status": item.status,
+                "alert_triggered": item.alert_triggered,
+            }
+        })
+
+    except InventoryItem.DoesNotExist:
+        return JsonResponse({"error": "Item not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 @login_required
 def settings_view(request):
