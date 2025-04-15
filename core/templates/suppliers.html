@@ -181,6 +181,12 @@
             </li>
           {% endif %}
             <li class="nav-item">
+              <a class="nav-link d-flex align-items-center gap-2" href="#" id="feedbackLink">
+                <i class="bi bi-chat-left-text"></i>
+                Feedback
+              </a>
+            </li>
+            <li class="nav-item">
               <a class="nav-link d-flex align-items-center gap-2" href="#" id="logoutBtn">
                 <svg class="bi"><use xlink:href="#door-closed"/></svg>
                 Sign out
@@ -272,5 +278,21 @@
     <script src="{% static 'core/js/navigation.js' %}"></script>
     <script src="{% static 'core/js/suppliers.js' %}"></script>
     {% include 'low_stock_alert.html' %}
+
+<!-- Feedback Link Script -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const feedbackLink = document.getElementById('feedbackLink');
+    if (feedbackLink) {
+      feedbackLink.addEventListener('click', function (e) {
+        e.preventDefault(); // prevents the default "#" behavior
+        window.open(
+          'https://docs.google.com/forms/d/e/1FAIpQLSf1BVWDcJlxRCJ79_XoL43ReEImc_w9frnOYIRh40CCVe9xOA/viewform',
+          '_blank'
+        );
+      });
+    }
+  });
+</script>
   </body> 
 </html>

@@ -10,7 +10,7 @@
   
     <!-- Bootstrap and Icons -->
     <link href="{% static 'core/css/bootstrap.min.css' %}" rel="stylesheet">
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Custom styles -->
     <link href="{% static 'core/css/dashboard.css' %}" rel="stylesheet">
@@ -177,6 +177,12 @@
               </a>
             </li>
           {% endif %}
+            <li class="nav-item">
+              <a class="nav-link d-flex align-items-center gap-2" href="#" id="feedbackLink">
+                <i class="bi bi-chat-left-text"></i>
+                Feedback
+              </a>
+            </li>
             <li class="nav-item">
               <a class="nav-link d-flex align-items-center gap-2" href="#" id="logoutBtn">
                 <svg class="bi"><use xlink:href="#door-closed"/></svg>
@@ -354,226 +360,20 @@
             </div>
           </div>
 
+          <!-- Feedback Link Script -->
           <script>
-          // Function to get CSRF token from cookies
-          function getCSRFToken() {
-              const name = 'csrftoken';
-              let cookieValue = null;
-              if (document.cookie && document.cookie !== '') {
-                  const cookies = document.cookie.split(';');
-                  for (let i = 0; i < cookies.length; i++) {
-                      const cookie = cookies[i].trim();
-                      if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                          break;
-                      }
-                  }
+            document.addEventListener('DOMContentLoaded', function () {
+              const feedbackLink = document.getElementById('feedbackLink');
+              if (feedbackLink) {
+                feedbackLink.addEventListener('click', function (e) {
+                  e.preventDefault(); // prevents the default "#" behavior
+                  window.open(
+                    'https://docs.google.com/forms/d/e/1FAIpQLSf1BVWDcJlxRCJ79_XoL43ReEImc_w9frnOYIRh40CCVe9xOA/viewform',
+                    '_blank'
+                  );
+                });
               }
-              return cookieValue;
-          }
-
-          // Function to show a notification toast
-          function showNotification(message, isSuccess = true) {
-            const toast = document.getElementById('notificationToast');
-            const toastTitle = document.getElementById('toastTitle');
-            const toastMessage = document.getElementById('toastMessage');
-            const bsToast = new bootstrap.Toast(toast);
-            
-            toastTitle.textContent = isSuccess ? 'Success' : 'Error';
-            toastMessage.textContent = message;
-            
-            // Change toast color based on status
-            toast.classList.remove('bg-success', 'bg-danger', 'text-white');
-            if (isSuccess) {
-              toast.classList.add('bg-success', 'text-white');
-            } else {
-              toast.classList.add('bg-danger', 'text-white');
-            }
-            
-            bsToast.show();
-          }
-
-          // Function to handle checkbox functionality
-          function attachCheckboxListeners() {
-              const selectAllCheckbox = $('#selectAllInvItems');
-              const itemCheckboxes = $('.inv-item-checkbox');
-              const bulkDeleteBtn = $('#bulkDeleteInvBtn');
-
-              // Handle "Select All" checkbox
-              selectAllCheckbox.off('change').on('change', function() {
-                  itemCheckboxes.prop('checked', this.checked);
-                  updateBulkDeleteButton();
-              });
-
-              // Handle individual checkboxes
-              itemCheckboxes.off('change').on('change', function() {
-                  const allChecked = itemCheckboxes.length === itemCheckboxes.filter(':checked').length;
-                  selectAllCheckbox.prop('checked', allChecked);
-                  updateBulkDeleteButton();
-              });
-
-              // Update bulk delete button state
-              function updateBulkDeleteButton() {
-                  const checkedCount = itemCheckboxes.filter(':checked').length;
-                  bulkDeleteBtn.prop('disabled', checkedCount === 0);
-              }
-
-              // Initial button state
-              updateBulkDeleteButton();
-
-              // Handle bulk delete
-              bulkDeleteBtn.off('click').on('click', async function() {
-                  const selectedIds = [];
-                  $('.inv-item-checkbox:checked').each(function() {
-                      selectedIds.push($(this).val());
-                  });
-
-                  if (selectedIds.length === 0) {
-                      showNotification('Please select items to delete');
-                      return;
-                  }
-
-                  if (confirm(`Are you sure you want to delete ${selectedIds.length} selected item(s)?`)) {
-                      try {
-                          const response = await fetch('{% url "bulk_delete_inventory_items" %}', {
-                              method: 'POST',
-                              headers: {
-                                  'Content-Type': 'application/json',
-                                  'X-CSRFToken': getCSRFToken()
-                              },
-                              body: JSON.stringify({ item_ids: selectedIds })
-                          });
-
-                          const result = await response.json();
-                          if (result.success) {
-                              // Show success message
-                              showNotification(result.message || 'Items deleted successfully');
-                              // Refresh the table
-                              await fetchInventoryData();
-                              // Reset select all checkbox
-                              selectAllCheckbox.prop('checked', false);
-                          } else {
-                              showNotification(result.error || 'Failed to delete items');
-                          }
-                      } catch (error) {
-                          console.error('Error:', error);
-                          showNotification('An error occurred while deleting items');
-                      }
-                  }
-              });
-          }
-
-          // Function to fetch and update inventory data
-          async function fetchInventoryData() {
-              try {
-                  const response = await fetch('{% url "get_inventory_items" %}');
-                  if (!response.ok) {
-                      throw new Error(`HTTP error! status: ${response.status}`);
-                  }
-                  const data = await response.json();
-                  
-                  // Clear the table body
-                  const tableBody = $('#tableBody');
-                  tableBody.empty();
-                  
-                  // Add each item to the table
-                  data.forEach(item => {
-                      let statusBadge;
-                      switch (item.status) {
-                          case 3:
-                              statusBadge = `<span class="badge bg-success">In-Stock</span>`;
-                              break;
-                          case 2:
-                              statusBadge = `<span class="badge bg-warning text-dark">Low-Stock</span>`;
-                              break;
-                          case 1:
-                              statusBadge = `<span class="badge bg-danger">Out-of-Stock</span>`;
-                              break;
-                          default:
-                              statusBadge = `<span class="badge bg-secondary">Unknown</span>`;
-                      }
-
-                      const row = `
-                          <tr data-id="${item.id}">
-                              <td>
-                                  <input type="checkbox" class="form-check-input inv-item-checkbox" value="${item.id}">
-                              </td>
-                              <td>${item.name}</td>
-                              <td>${item.quantity}</td>
-                              <td>${item.threshold}</td>
-                              <td>${statusBadge}</td>
-                              <td>
-                                  <button class="btn btn-sm btn-outline-primary edit-btn">
-                                      <i class="fas fa-edit"></i>
-                                  </button>
-                              </td>
-                          </tr>
-                      `;
-                      tableBody.append(row);
-                  });
-
-                  // Reattach event listeners
-                  attachCheckboxListeners();
-                  
-              } catch (error) {
-                  console.error('Error fetching inventory data:', error);
-                  // Optionally show an error message to the user
-                  showNotification('Error refreshing inventory data. Please refresh the page.');
-              }
-          }
-
-          $(document).ready(function() {
-              // Initial fetch of inventory data
-              fetchInventoryData();
-
-              // Handle import form submission
-              $('#importForm').on('submit', async function(e) {
-                  e.preventDefault();
-                  
-                  const formData = new FormData(this);
-                  const uploadBtn = $('#uploadBtn');
-                  const successAlert = $('#importSuccess');
-                  const errorAlert = $('#importError');
-                  
-                  // Reset alerts
-                  successAlert.addClass('d-none').text('');
-                  errorAlert.addClass('d-none').text('');
-                  
-                  // Disable button and show loading state
-                  uploadBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Importing...');
-                  
-                  try {
-                      const response = await fetch('{% url "import_products" %}', {
-                          method: 'POST',
-                          body: formData,
-                          headers: {
-                              'X-CSRFToken': getCSRFToken()
-                          }
-                      });
-                      
-                      const result = await response.json();
-                      if (result.success) {
-                          successAlert.removeClass('d-none').text(result.message);
-                          // Refresh the inventory table
-                          await fetchInventoryData();
-                          // Close modal after 2 seconds
-                          setTimeout(() => {
-                              $('#importModal').modal('hide');
-                              // Reset form
-                              $('#importForm')[0].reset();
-                          }, 2000);
-                      } else {
-                          errorAlert.removeClass('d-none').text(result.error);
-                      }
-                  } catch (error) {
-                      console.error('Error:', error);
-                      errorAlert.removeClass('d-none').text('An error occurred while importing products.');
-                  } finally {
-                      // Re-enable button and restore text
-                      uploadBtn.prop('disabled', false).html('Upload and Import');
-                  }
-              });
-          });
+            });
           </script>
 </body>
 </html>
