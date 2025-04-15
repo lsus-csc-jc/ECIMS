@@ -175,7 +175,7 @@ def update_order(request, order_id):
                     # Find or create the inventory item based on the product name from the order item
                     inventory_item, created = InventoryItem.objects.get_or_create(
                         name=item.product_name, # Use product_name from OrderItem
-                        defaults={'quantity': 0, 'description': '', 'threshold': 0} # Sensible defaults if created
+                        defaults={'quantity': 0, 'threshold': 0} # Removed description field
                     )
                     # Increment the inventory quantity
                     inventory_item.quantity += item.quantity # Use quantity from OrderItem
@@ -591,7 +591,7 @@ def bulk_update_order_status(request):
                         for item in order.items.all(): 
                             inventory_item, created = InventoryItem.objects.get_or_create(
                                 name=item.product_name,
-                                defaults={'quantity': 0, 'description': '', 'threshold': 0}
+                                defaults={'quantity': 0, 'threshold': 0}
                             )
                             inventory_item.quantity += item.quantity
                             inventory_item.save() 
