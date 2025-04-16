@@ -44,24 +44,21 @@ The goal of ECIMS is to deliver a scalable and adaptable inventory management sy
 
 ## Tech Stack
 
-- **Text Editor/IDE**: Visual Studio Code  
+- **Text Editor/IDE**: Visual Studio Code
 - **Version Control**: Git and GitHub  
 - **Backend Development**:
   - Language: Python
   - Framework: Django
-  - Require Packages: djangorestframework, markdown, django-filter, python-dotenv, django-dotenv, djangorestframework-simplejwt
+  - Require Packages: djangorestframework, markdown, django-filter, python-dotenv, django-dotenv, djangorestframework-simplejwt, django-currentuser
   - Database: SQLite
   - API Development: Django REST Framework
-  - Authentication: Django Authentication, DRF Token  
+  - Authentication: Django Authentication, DRF Token
 - **Frontend Development**:
   - Languages: HTML, CSS, JavaScript
   - Frameworks: React, Vue, Bootstrap
-  - API Development: Node.js, Axios  
-- **Backend Deployment**: Render
-- **Frontend Deployment**: Vercel 
-- **Containerization**: Docker
-- **Frontend Deployment**: Vercel  
-- **Testing Tools**: Postman, Pytest, Redux 
+  - API Development: Node.js, Axios
+- **Deployment**: Heroku
+- **Testing Tools**: Postman, Pytest, Redux
 - **Project Management Tools**: GitHub
 
 ## How to Get Started - Coming Soon! 🚀 

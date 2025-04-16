@@ -1,6 +1,7 @@
 $(document).ready(function () {
     console.log("✅ JavaScript Loaded and Running in invmanagement.js!");
 
+    // Constants and Variables
     const apiUrl = "/api/v1/items/";
     const tableBody = $("#tableBody");
     let currentInventoryData = []; // Store current data for comparison if needed
@@ -117,6 +118,7 @@ $(document).ready(function () {
         }
     }
 
+    // Update the Table with Fetched Data
     function updateTable(data) {
         console.log("🔄 Updating table with fetched data...");
         tableBody.empty();
@@ -169,7 +171,7 @@ $(document).ready(function () {
 
     // Finds items that are low/out-of-stock and haven't been viewed
     function findUnviewedLowStockItems(data) {
-        const viewed = getViewedLowStockIds();
+        console.log("🔍 Checking for low-stock items...");
         const lowStockItems = [];
 
         data.forEach(product => {
@@ -201,6 +203,7 @@ $(document).ready(function () {
         contentHtml += '</ul>';
         
         $("#notificationContent").html(contentHtml);
+
         const modal = new bootstrap.Modal(document.getElementById("notificationModal"));
         modal.show();
 
@@ -446,7 +449,7 @@ $(document).ready(function () {
         };
 
         try {
-            const response = await fetch(`${apiUrl}${productId}/`, {
+            const response = await fetch(`${apiUrl}${productId}/update_item`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
