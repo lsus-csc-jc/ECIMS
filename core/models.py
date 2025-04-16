@@ -9,13 +9,21 @@ User = get_user_model()
 # Profile for each user
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    # Add a default value to the role field to avoid NOT NULL constraint errors
     role = models.CharField(max_length=50, default="Employee")
     bio = models.TextField(blank=True, null=True)
-    # Add any other fields you have...
+
+    # New optional fields for profile tab:
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    website = models.URLField(blank=True, null=True)
+    street = models.CharField(max_length=100, blank=True, null=True)
+    city = models.CharField(max_length=50, blank=True, null=True)
+    state = models.CharField(max_length=50, blank=True, null=True)
+    zip_code = models.CharField(max_length=10, blank=True, null=True)
+    timezone = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
         return self.user.username
+
 
 # Supplier model
 class Supplier(models.Model):
@@ -59,12 +67,11 @@ class InventoryItem(models.Model):
         OUTOFSTOCK: "Out of Stock",
         UNKNOWN: "Unknown"
     }
+
     name = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    quantity = models.PositiveIntegerField(default=0)
-    threshold = models.PositiveIntegerField(default=0)
-    #supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='inventory_items')
-    status = models.PositiveSmallIntegerField(choices=INV_STATUS_CHOICES, default=UNKNOWN)
+    quantity = models.IntegerField(default=0)
+    threshold = models.IntegerField(default=0)
+    status = models.IntegerField(choices=INV_STATUS_CHOICES.items(), default=UNKNOWN)
     date_modified = models.DateTimeField(auto_now=True)
     date_added = models.DateTimeField(auto_now_add=True)
     alert_triggered = models.BooleanField(default=False)
@@ -112,11 +119,14 @@ class InventoryItem(models.Model):
                 )
         super().save(*args,**kwargs)
 
-    def __str__(self):
-        return self.name
-    
+    def get_status_display(self):
+        return self.INV_STATUS_CHOICES.get(self.status, "Unknown")
+
     class Meta:
         ordering = ['name']
+    
+    def __str__(self):
+        return self.name
 
 # Order model
 class Order(models.Model):
@@ -129,25 +139,27 @@ class Order(models.Model):
     date_ordered = models.DateTimeField(auto_now_add=True)
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='orders')
     status = models.CharField(max_length=20, choices=ORDER_STATUS, default='PENDING')
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    # New fields added:
-    product = models.CharField(max_length=255, blank=True, null=True)
-    quantity = models.PositiveIntegerField(blank=True, null=True)
+    # total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00) # Removed for now, needs recalculation logic if used
+    # REMOVED Fields for single product/quantity:
+    # product = models.CharField(max_length=255, blank=True, null=True)
+    # quantity = models.PositiveIntegerField(blank=True, null=True)
     expected_delivery = models.DateField(blank=True, null=True)
     date_modified = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.order_number
 
-# Through model to represent items in an order
+# Model for items within an Order (Modified)
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_items')
-    inventory_item = models.ForeignKey(InventoryItem, on_delete=models.PROTECT)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items') # Changed related_name to 'items'
+    product_name = models.CharField(max_length=255) # Changed from inventory_item ForeignKey
     quantity = models.PositiveIntegerField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    # REMOVED price field for now
+    # price = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
-        return f"{self.quantity} x {self.inventory_item.name} in order {self.order.order_number}"
+        # Updated __str__ representation
+        return f"{self.quantity} x {self.product_name} in order {self.order.order_number}"
 
 # Manage orders placed to suppliers
 class PurchaseOrder(models.Model):

@@ -137,6 +137,7 @@
                     Inventory Management
                   </a>
                 </li>
+                {% if user.is_superuser or user.profile.role == 'Admin' or user.profile.role == 'Owner' or user.profile.role == 'Manager' %}
                 <li class="nav-item">
                   <a class="nav-link d-flex align-items-center gap-2" href="#" data-page="orders.html">
                     <svg class="bi"><use xlink:href="#cart"/></svg>
@@ -155,12 +156,13 @@
                     Change Log
                   </a>
                 </li>
+                {% endif %}
               </ul>
 
               <hr class="my-3">
 
               <ul class="nav flex-column mb-auto">
-                {% if user.is_superuser %}
+                {% if user.is_superuser or user.profile.role == 'Admin' or user.profile.role == 'Owner' %}
                   <li class="nav-item">
                     <a class="nav-link d-flex align-items-center gap-2" href="#" data-page="settings.html">
                       <svg class="bi"><use xlink:href="#gear-wide-connected"/></svg>
@@ -168,6 +170,12 @@
                     </a>
                   </li>
                 {% endif %}
+                <li class="nav-item">
+                  <a class="nav-link d-flex align-items-center gap-2" href="#" id="feedbackLink">
+                    <i class="bi bi-chat-left-text"></i>
+                    Feedback
+                  </a>
+                </li>
                 <li class="nav-item">
                   <a class="nav-link d-flex align-items-center gap-2" href="#" id="logoutBtn">
                     <svg class="bi"><use xlink:href="#door-closed"/></svg>
@@ -184,45 +192,168 @@
           <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
             <h1 class="h2">Dashboard</h1>
           </div>
+          <!-- KPI Cards Row -->
           <div class="container mt-4">
-            <div class="row text-center">
-              <div class="col-md-4">
-                <a href="invmanagement.html" class="text-decoration-none">
-                  <div class="card border-primary shadow-sm">
-                    <div class="card-body">
-                      <h5 class="card-title">Products</h5>
-                      <p class="display-4" id="total-products">?</p>
+            <div class="row text-center g-3">
+              <div class="col-md-3">
+                <a href="{% url 'invmanagement' %}" class="text-decoration-none text-dark">
+                  <div class="card border-primary shadow-sm h-100">
+                    <div class="card-body d-flex flex-column justify-content-center">
+                      <h5 class="card-title">Total Products</h5>
+                      <p class="display-4" id="total-products">{{ total_products }}</p>
                     </div>
                   </div>
                 </a>
               </div>
-              <div class="col-md-4">
-                <a href="invmanagement.html" class="text-decoration-none">
-                  <div class="card border-warning shadow-sm">
-                    <div class="card-body">
+              <div class="col-md-3">
+                <a href="{% url 'invmanagement' %}" class="text-decoration-none text-dark">
+                  <div class="card border-warning shadow-sm h-100">
+                    <div class="card-body d-flex flex-column justify-content-center">
                       <h5 class="card-title">Stock Alerts</h5>
-                      <p class="display-4" id="total-alerts">?</p>
+                      <p class="display-4" id="total-alerts">{{ stock_alerts }}</p>
                     </div>
                   </div>
                 </a>
               </div>
-              <div class="col-md-4">
-                <a href="orders.html" class="text-decoration-none">
-                <div class="card border-danger shadow-sm">
-                  <div class="card-body">
+              <div class="col-md-3">
+                {% if user.is_superuser or user.profile.role == 'Admin' or user.profile.role == 'Owner' or user.profile.role == 'Manager' %}
+                <a href="{% url 'orders' %}" class="text-decoration-none text-dark">
+                {% else %}
+                <div class="text-decoration-none text-dark">
+                {% endif %}
+                <div class="card border-danger shadow-sm h-100">
+                  <div class="card-body d-flex flex-column justify-content-center">
                     <h5 class="card-title">Pending Orders</h5>
-                    <p class="display-4" id="pending-orders">?</p>
+                    <p class="display-4" id="pending-orders">{{ pending_orders }}</p>
                   </div>
                 </div>
+                {% if user.is_superuser or user.profile.role == 'Admin' or user.profile.role == 'Owner' or user.profile.role == 'Manager' %}
                 </a>
+                {% else %}
+                </div>
+                {% endif %}
+              </div>
+              <div class="col-md-3">
+                {% if user.is_superuser or user.profile.role == 'Admin' or user.profile.role == 'Owner' or user.profile.role == 'Manager' %}
+                <a href="{% url 'suppliers' %}" class="text-decoration-none text-dark">
+                {% else %}
+                <div class="text-decoration-none text-dark">
+                {% endif %}
+                <div class="card border-info shadow-sm h-100">
+                  <div class="card-body d-flex flex-column justify-content-center">
+                    <h5 class="card-title">Total Suppliers</h5>
+                    <p class="display-4" id="total-suppliers">{{ total_suppliers }}</p>
+                  </div>
+                </div>
+                {% if user.is_superuser or user.profile.role == 'Admin' or user.profile.role == 'Owner' or user.profile.role == 'Manager' %}
+                </a>
+                {% else %}
+                </div>
+                {% endif %}
               </div>
             </div>
+          </div>
+         
+          <!-- Charts and Lists Row -->
+          <div class="row mt-4 g-3">
+            <!-- Inventory Status Chart -->
+            <div class="col-md-6">
+              <div class="card border-primary shadow-sm">
+                <div class="card-header fw-bold">Inventory Status Breakdown</div>
+                <div class="card-body">
+                  <canvas id="inventoryStatusChart"></canvas>
+                </div>
+              </div>
+            </div>
+           
+            <!-- Right Column with Orders and Suppliers -->
+            <div class="col-md-6">
+              <!-- Recent Orders List -->
+              <div class="card border-primary shadow-sm mb-3">
+                <div class="card-header fw-bold">Recent Orders</div>
+                <div class="card-body">
+                  {% if recent_orders %}
+                  <ul class="list-group list-group-flush">
+                    {% for order in recent_orders %}
+                      <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>#{{ order.order_number }} - {{ order.supplier.name }}</span>
+                        <span class="fw-bold {% if order.status == 'PENDING' %}text-warning{% elif order.status == 'COMPLETED' %}text-success{% else %}text-secondary{% endif %}">{{ order.get_status_display }}</span>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                  {% else %}
+                  <p class="text-muted">No recent orders.</p>
+                  {% endif %}
+                </div>
+              </div>
+              
+              <!-- Suppliers List -->
+              <div class="card border-primary shadow-sm">
+                <div class="card-header fw-bold">Suppliers</div>
+                <div class="card-body">
+                  {% if top_suppliers %}
+                  <ul class="list-group list-group-flush">
+                    {% for supplier in top_suppliers %}
+                      <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{{ supplier.name }}</span>
+                        <span class="badge bg-primary rounded-pill">{{ supplier.order_count }} orders</span>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                  {% else %}
+                  <p class="text-muted">No supplier order data available.</p>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Low Stock Items Row -->
+          <div class="row mt-4 g-3">
+             <div class="col-12">
+                <div class="card border-primary shadow-sm">
+                    <div class="card-header fw-bold">Items Needing Attention (Low Stock / Out of Stock)</div>
+                    <div class="card-body">
+                        {% if low_stock_items %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead>
+                                    <tr><th>Product</th><th>Quantity</th><th>Threshold</th><th>Status</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in low_stock_items %}
+                                    <tr>
+                                        <td>{{ item.name }}</td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>{{ item.threshold }}</td>
+                                        <td>
+                                            <span class="fw-bold {% if item.status == 1 %}text-danger{% elif item.status == 2 %}text-warning{% elif item.status == 3 %}text-success{% else %}text-secondary{% endif %}">
+                                                {{ item.get_status_display }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted">All inventory levels are currently sufficient.</p>
+                        {% endif %}
+                    </div>
+                </div>
+             </div>
           </div>
 
           <!-- Bootstrap Bundle JS, Chart.js, and Navigation JS -->
           <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
           <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.2/dist/chart.umd.js" integrity="sha384-eI7PSr3L1XLISH8JdDII5YN/njoSsxfbrkCTnJrzXt+ENP5MOVBxD+l6sEG4zoLp" crossorigin="anonymous"></script>
           <script src="{% static 'core/js/navigation.js' %}"></script>
+          <script>
+            // Pass data from the backend to JavaScript
+            window.inventoryChartLabels = {{ inventory_chart_labels|safe }};
+            window.inventoryChartData = {{ inventory_chart_data|safe }};
+          </script>
+          <script src="{% static 'core/js/dashboard.js' %}"></script>
         </main>
       </div>
     </div>

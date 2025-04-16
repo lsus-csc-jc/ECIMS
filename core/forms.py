@@ -12,6 +12,9 @@ class SignUpForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']  # Store email properly
+        user.is_superuser = True  # Give superuser privileges
+        user.is_staff = True      # Give staff access
+        user.is_active = True     # Ensure account is active
         if commit:
             user.save()
         return user

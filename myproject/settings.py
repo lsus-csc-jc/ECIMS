@@ -134,6 +134,17 @@ WHITENOISE_KEEP_ONLY_HASHED_FILES = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login.html'
 
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'odai.alkhatib@gmail.com'
+EMAIL_HOST_PASSWORD = 'zbbvexyovslvbaye'  # App Password (without spaces)
+DEFAULT_FROM_EMAIL = 'ECIMS Support <odai.alkhatib@gmail.com>'
+
+# Password Reset Settings
+PASSWORD_RESET_TIMEOUT = 14400  # 4 hours in seconds
 
 # REST Framework settings
 REST_FRAMEWORK = {

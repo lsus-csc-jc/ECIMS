@@ -1,5 +1,13 @@
 from django.urls import path
-from .views import login_page, signup_page, dashboard_view, invmanagement_view, orders_view, save_order, suppliers_view, reports_view, settings_view, logout_view, changelog_view, add_inventory_item, delete_inventory_item, add_user, profile_list, reset_user_password, delete_user, edit_user, update_inventory_item, mark_alert_viewed
+from .views import (login_page, signup_page, dashboard_view, invmanagement_view, orders_view, save_order, suppliers_view, reports_view, settings_view, logout_view, changelog_view, add_inventory_item, delete_inventory_item, add_user, profile_list, delete_user, edit_user, update_inventory_item, mark_alert_viewed, 
+    reset_password, delete_user, edit_user, update_user, update_order, 
+    get_suppliers, delete_order, 
+    bulk_delete_orders, bulk_update_order_status,
+    bulk_delete_inventory_items,
+    import_products,
+    download_template,
+    get_inventory_items,
+    update_inventory_item)
 
 urlpatterns = [
     path('', dashboard_view, name='home'),  # This handles the root URL "/"
@@ -17,10 +25,22 @@ urlpatterns = [
     path('inventory/delete/<int:item_id>/', delete_inventory_item, name='delete_inventory_item'),
     path('add_user/', add_user, name='add_user'),
     path('profiles/', profile_list, name='profile_list'),
-    path('reset_user_password/<int:user_id>/', reset_user_password, name='reset_user_password'),
+    path('reset-password/', reset_password, name='reset_password'),
     path('delete_user/<int:user_id>/', delete_user, name='delete_user'),
     path('edit_user/<int:user_id>/', edit_user, name='edit_user'),
     path('api/v1/items/<int:item_id>/update_item', update_inventory_item, name='update_inventory_item'),
     path('api/v1/items/<int:item_id>/mark_alert_viewed/', mark_alert_viewed, name='mark_alert_viewed'),
+    path('update-user/<int:user_id>/', update_user, name='update_user'),
+    path('update_order/<int:order_id>/', update_order, name='update_order'),
+    path('get_suppliers/', get_suppliers, name='get_suppliers'),
+    path('delete_order/<int:order_id>/', delete_order, name='delete_order'),
+    path('orders/bulk_delete/', bulk_delete_orders, name='bulk_delete_orders'),
+    path('orders/bulk_update_status/', bulk_update_order_status, name='bulk_update_order_status'),
+    path('inventory/bulk_delete/', bulk_delete_inventory_items, name='bulk_delete_inventory_items'),
+    path('import-products/', import_products, name='import_products'),
+    path('download-template/', download_template, name='download_template'),
+    path('api/v1/items/', get_inventory_items, name='get_inventory_items'),
+    path('api/v1/items/add/', add_inventory_item, name='add_inventory_item'),
+    path('api/v1/items/<int:item_id>/delete/', delete_inventory_item, name='delete_inventory_item'),
 
 ]

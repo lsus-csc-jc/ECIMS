@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Import Products{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Import Products from CSV</h4>
+                </div>
+                <div class="card-body">
+                    <div id="status-message" class="d-none alert mb-3"></div>
+
+                    <form id="importForm" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="excel_file" class="form-label">Select CSV File</label>
+                            <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".csv">
+                            <div class="form-text">File must be in CSV format (.csv)</div>
+                        </div>
+                        <div class="mb-3">
+                            <h5>File Format Requirements:</h5>
+                            <ul>
+                                <li>The CSV file must contain these columns: Name, Quantity, Threshold</li>
+                                <li>Name: Product name (required)</li>
+                                <li>Quantity: Current stock quantity (required, must be a number)</li>
+                                <li>Threshold: Low stock alert threshold (required, must be a number)</li>
+                            </ul>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">Upload and Import</button>
+                            <a href="{% url 'download_template' %}" class="btn btn-outline-secondary">
+                                Download Template
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include import_products.js -->
+<script src="{% static 'core/js/import_products.js' %}"></script>
+{% endblock %} 

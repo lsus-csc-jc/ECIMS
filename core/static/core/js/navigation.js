@@ -28,6 +28,9 @@ document.addEventListener("DOMContentLoaded", function () {
             localStorage.removeItem("authToken"); // Clear token from localStorage
             sessionStorage.clear(); // Clear sessionStorage data
 
+            // Clear the viewed low stock items history on logout
+            localStorage.removeItem("viewedLowStockIds"); 
+
             // Show a thank-you message before redirecting
             alert("Thank you for using ECIMS!");
 
@@ -66,5 +69,17 @@ document.addEventListener("DOMContentLoaded", function () {
     // Call the function to fetch and update dashboard data on load
     if (document.body.dataset.page === 'dashboard') {
         fetchDashboardData();
+    }
+
+    // Feedback link functionality
+    const feedbackLink = document.getElementById('feedbackLink');
+    if (feedbackLink) {
+        feedbackLink.addEventListener('click', function (e) {
+            e.preventDefault(); // prevents the default "#" behavior
+            window.open(
+                'https://docs.google.com/forms/d/e/1FAIpQLSf1BVWDcJlxRCJ79_XoL43ReEImc_w9frnOYIRh40CCVe9xOA/viewform',
+                '_blank'
+            );
+        });
     }
 });
