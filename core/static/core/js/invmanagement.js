@@ -172,6 +172,7 @@ $(document).ready(function () {
     // Finds items that are low/out-of-stock and haven't been viewed
     function findUnviewedLowStockItems(data) {
         console.log("🔍 Checking for low-stock items...");
+        const viewed = getViewedLowStockIds();
         const lowStockItems = [];
 
         data.forEach(product => {
