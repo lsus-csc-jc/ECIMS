@@ -14,7 +14,6 @@ from .decorators import allowed_roles
 from .roles import ROLE_SETTINGS_ACCESS, ROLE_INVENTORY_ACCESS, ROLE_ORDERS_ACCESS, ROLE_SUPPLIERS_ACCESS, ROLE_REPORTS_ACCESS
 from .forms import SignUpForm  # Import the fixed signup form
 from .models import Order, Supplier, Profile, InventoryItem, InventoryItem, OrderItem
-from .decorators import role_required
 import logging
 from django.db import transaction, IntegrityError
 from django.db.models import Count, Q # Import Q for complex lookups

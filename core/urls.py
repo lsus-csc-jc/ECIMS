@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import (login_page, signup_page, dashboard_view, invmanagement_view, orders_view, save_order, suppliers_view, reports_view, settings_view, logout_view, changelog_view, add_inventory_item, delete_inventory_item, add_user, profile_list, reset_user_password, delete_user, edit_user, update_inventory_item, mark_alert_viewed, 
+from .views import (login_page, signup_page, dashboard_view, invmanagement_view, orders_view, save_order, suppliers_view, reports_view, settings_view, logout_view, changelog_view, add_inventory_item, delete_inventory_item, add_user, profile_list, delete_user, edit_user, update_inventory_item, mark_alert_viewed, 
     reset_password, delete_user, edit_user, update_user, update_order, 
     get_suppliers, delete_order, 
     bulk_delete_orders, bulk_update_order_status,
