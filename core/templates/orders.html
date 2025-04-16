@@ -287,7 +287,7 @@
 {% endwith %}
 <tr id="details-{{ order.id }}" style="display: none;" class="order-details-row">
     <td colspan="7"> <!-- *** Adjusted colspan back to 7 to account for checkbox *** -->
-        <div class="p-2" style="background-color: #f8f9fa;">
+        <div class="p-2">
             <strong>Order Items:</strong>
             {% if order.items.all %}
                 <ul class="list-unstyled mt-1 mb-0">
