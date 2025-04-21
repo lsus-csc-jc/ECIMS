@@ -6,12 +6,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ECIMS Settings</title>
+  
     <!-- Bootstrap and Icons -->
     <link href="{% static 'core/css/bootstrap.min.css' %}" rel="stylesheet">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.min.css" rel="stylesheet">
+
     <!-- Custom styles -->
     <link href="{% static 'core/css/dashboard.css' %}" rel="stylesheet">
   </head>
+  
   <body>
     <!-- SVG Icons -->
     <svg xmlns="http://www.w3.org/2000/svg" class="d-none">
@@ -101,10 +105,20 @@
       </ul>
     </div>
 
-    <!-- Header -->
-    <header class="navbar sticky-top flex-md-nowrap p-0 shadow" style="background-color: rgb(30, 55, 85);" data-bs-theme="dark">
-      <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-4 text-white" href="#">ECIMS</a>
-    </header>
+<!-- Header -->    
+<header class="navbar sticky-top flex-md-nowrap p-0 shadow" style="background-color: rgb(30, 55, 85);" data-bs-theme="dark">
+  <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-4 text-white" href="#">ECIMS</a>
+
+  <ul class="navbar-nav flex-row d-md-none">
+    </button>
+    </li>
+    <li class="nav-item text-nowrap">
+      <button class="nav-link px-3 text-white" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+        <svg class="bi"><use xlink:href="#list"/></svg>
+      </button>
+    </li>
+  </ul>
+</header>
 
     <!-- Sidebar Menu -->
     <div class="container-fluid">
@@ -113,7 +127,7 @@
           <div class="offcanvas-md offcanvas-end bg-body-tertiary" tabindex="-1" id="sidebarMenu">
             <div class="offcanvas-header">
               <h5 class="offcanvas-title">ECIMS</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+              <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body d-md-flex flex-column p-0 pt-lg-3">
               <ul class="nav flex-column">

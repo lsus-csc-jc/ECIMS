@@ -1042,3 +1042,6 @@ def delete_inventory_item(request, item_id):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
     return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+def logout_page(request):
+    return render(request, 'logout.html')

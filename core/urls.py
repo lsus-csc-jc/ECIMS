@@ -7,7 +7,8 @@ from .views import (login_page, signup_page, dashboard_view, invmanagement_view,
     import_products,
     download_template,
     get_inventory_items,
-    update_inventory_item)
+    update_inventory_item,
+    logout_page)
 
 urlpatterns = [
     path('', dashboard_view, name='home'),  # This handles the root URL "/"
@@ -42,5 +43,6 @@ urlpatterns = [
     path('api/v1/items/', get_inventory_items, name='get_inventory_items'),
     path('api/v1/items/add/', add_inventory_item, name='add_inventory_item'),
     path('api/v1/items/<int:item_id>/delete/', delete_inventory_item, name='delete_inventory_item'),
+    path('logout.html', logout_page, name='logout_page'),
 
 ]
