@@ -20,26 +20,19 @@ document.addEventListener("DOMContentLoaded", function () {
     // Sign-out functionality
     const logoutButton = document.getElementById("logoutBtn");
     if (logoutButton) {
-        logoutButton.addEventListener("click", function (event) {
-            event.preventDefault(); // Prevent default link behavior
-
-            // Clear authentication data (localStorage/sessionStorage)
-            //this does not seem to do anything.  I am not sure if the JS can even manipulate this storage, but if it can, the name is wrong - JC:20250220
-            localStorage.removeItem("authToken"); // Clear token from localStorage
-            sessionStorage.clear(); // Clear sessionStorage data
-
-            // Clear the viewed low stock items history on logout
-            localStorage.removeItem("viewedLowStockIds"); 
-
-            // Show a thank-you message before redirecting
-            alert("Thank you for using ECIMS!");
-
-            // After 2 seconds, redirect to the login page
-            setTimeout(function() {
-                window.location.href = "logout"; // Redirect to the login page
-            }, 2000); // 2-second delay
-        });
+      logoutButton.addEventListener("click", function (event) {
+        event.preventDefault(); // Prevent default link behavior
+    
+        // Clear authentication/session data
+        localStorage.removeItem("authToken");
+        sessionStorage.clear();
+        localStorage.removeItem("viewedLowStockIds");
+    
+        // Redirect to a friendly logout page
+        window.location.href = "/logout.html";
+      });
     }
+    
 
     // Call the setupNavigation function on page load
     setupNavigation();
